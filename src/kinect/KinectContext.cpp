@@ -58,7 +58,7 @@ namespace kinect {
 				for(int i = 0; i < size; i++){
 					if(kinects_[i]->uniqueId_ != NULL && 0 == wcscmp(kinects_[i]->uniqueId_, instanceName)){
 						kinects_[i]->Connect(kinects_[i]->uniqueId_);
-						std::wcout << "KINECT IS PLUGGED, Device Name:: " << instanceName << "\n" << std::endl;
+						std::wcout << "KINECT IS PLUGGED, Device Name:: " << instanceName << std::endl;
 						found = true;
 						break;
 					}
@@ -71,7 +71,7 @@ namespace kinect {
 							if(!kinects_[i]->IsConnected()){
 								kinects_[i]->index_ = index;
 								kinects_[i]->Connect(index);
-								std::wcout << "KINECT IS PLUGGED, Device Name:: " << instanceName << "\n" << std::endl;
+								std::wcout << "KINECT IS PLUGGED, Device Name:: " << instanceName << std::endl;
 								found = true;
 								break;
 							}
@@ -94,7 +94,7 @@ namespace kinect {
 				for(int i = 0; i < size; i++){
 					if(kinects_[i]->uniqueId_ != NULL && 0 == wcscmp(kinects_[i]->uniqueId_, instanceName)){
 						kinects_[i]->Disconnect();
-						std::wcout<< "\n" << "KINECT IS UNPLUGGED, Device Name::  " << instanceName << "\n" << std::endl;
+						std::wcout<< "\n" << "KINECT IS UNPLUGGED, Device Name::  " << instanceName << std::endl;
 						break;
 					}
 				}
@@ -124,7 +124,7 @@ namespace kinect {
 				int size = (int)kinects_.size();
 				for(int i = 0; i < size; i++){
 					if(kinects_[i]->index_ == sensor->NuiInstanceIndex()){
-						std::wcout << "Kinect[" << kinects_[i]->index_ << "] is connected, Device Name:: " << sensor->NuiDeviceConnectionId() << "\n" << std::endl;
+						std::wcout << "Kinect[" << kinects_[i]->index_ << "] is connected, Device Name:: " << sensor->NuiDeviceConnectionId() << std::endl;
 						lock_.unlock();
 						return sensor;
 					}
@@ -147,7 +147,7 @@ namespace kinect {
 				int size = (int)kinects_.size();
 				for(int i = 0; i < size; i++){
 					if(0 == wcscmp(kinects_[i]->uniqueId_, sensor->NuiDeviceConnectionId())){
-						std::wcout << "Kinect[" << kinects_[i]->index_ << "] is connected, Device Name:: " << sensor->NuiDeviceConnectionId() << "\n" << std::endl;
+						std::wcout << "Kinect[" << kinects_[i]->index_ << "] is connected, Device Name:: " << sensor->NuiDeviceConnectionId() << std::endl;
 						lock_.unlock();
 						return sensor;
 					}
@@ -166,7 +166,7 @@ namespace kinect {
 		{
 			if(IsConnected(kinect.index_)){
 				lock_.lock();
-				std::wcout << "Shutdown Kinect[" << kinect.index_ << "], Device Name:: " << kinect.uniqueId_ << "\n" << std::endl;
+				std::wcout << "Shutdown Kinect[" << kinect.index_ << "], Device Name:: " << kinect.uniqueId_ << std::endl;
 				kinect.sensor_->NuiShutdown();
 				lock_.unlock();
 			}

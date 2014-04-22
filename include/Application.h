@@ -8,6 +8,8 @@
 #include <kinect\nui\Kinect.h>
 #include <kinect\nui\ImageFrame.h>
 
+#include "FaceTracker.h"
+
 
 class Application
 {
@@ -24,6 +26,8 @@ public:
     kinect::nui::Kinect *kinect = nullptr;
     kinect::nui::ImageStream *videoStream;
     kinect::nui::ImageStream *depthStream;
+
+    FaceTracker* faceTracker = nullptr;
 
     Application(int argc, _TCHAR* argv[]);
     ~Application();

@@ -17,6 +17,9 @@ Application::Application(int argc, _TCHAR* argv[])
 
 Application::~Application()
 {
+    if (this->faceTracker != nullptr)
+        delete this->faceTracker;
+
     if (this->kinect != nullptr)
         delete this->kinect;
 
@@ -80,7 +83,13 @@ void Application::Initialize() {
 
     videoStream->Open(NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480);
     depthStream->Open(NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480);
+
+//    kinect->WaitAndUpdateAll(); // Force connect
    
+    std::cout << "Initializing Kinect Face Tracker Library" << std::endl;
+
+    faceTracker = new FaceTracker();
+
 
     //std::cout << "Initializing Window" << std::endl;
 
