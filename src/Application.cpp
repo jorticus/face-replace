@@ -2,14 +2,10 @@
 // Virtual Mirror Demo App
 // Author: Jared Sanson (jared@jared.geek.nz)
 //
-// Tutorials:       http://www.sfml-dev.org/tutorials/2.1/
-// Documentation:   http://www.sfml-dev.org/documentation/2.1/
-//
 
 
 #include "stdafx.h"
 #include "Application.h"
-
 
 Application::Application(int argc, _TCHAR* argv[])
 {
@@ -57,7 +53,7 @@ int Application::Main()
         //this->window->clear();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        this->Draw();
+        Draw();
 
         this->window->display();
     }
@@ -70,8 +66,8 @@ void Application::Initialize() {
     // Load textures
     std::cout << "Loading textures" << std::endl;
 
-    if (!wolf_tex.loadFromFile("wolf.png"))
-        throw std::exception("Couldn't load texture");
+    /*if (!wolf_tex.loadFromFile("wolf.png"))
+        throw std::exception("Couldn't load texture");*/
 
     // Initialize the Kinect camera
     std::cout << "Initializing Kinect" << std::endl;
@@ -84,6 +80,7 @@ void Application::Initialize() {
 
     videoStream->Open(NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480);
     depthStream->Open(NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480);
+   
 
     //std::cout << "Initializing Window" << std::endl;
 
@@ -97,7 +94,7 @@ void Application::Initialize() {
 
     if (this->fullscreen) {
         // Return all allowable full-screen modes, sorted from best to worst.
-        const std::vector<sf::VideoMode, std::allocator<sf::VideoMode>> modes = sf::VideoMode::getFullscreenModes();
+        auto modes = sf::VideoMode::getFullscreenModes();
 
         // Use the best mode to set the window to be full-screen
         this->window = new sf::RenderWindow(modes[0], this->title, sf::Style::Fullscreen, settings);
@@ -111,48 +108,66 @@ void Application::Initialize() {
     std::cout << "Started" << std::endl;
 }
 
-void Application::Draw() {
+void Application::Capture() {
 
     // Capture frame from kinect
     kinect->WaitAndUpdateAll();
     kinect::nui::VideoFrame imageMD(*videoStream);
     kinect::nui::DepthFrame depthMD(*depthStream);
 
-    sf::Vector2u rgbSize(imageMD.Width(), imageMD.Height());
-    sf::Vector2u depthSize(depthMD.Width(), depthMD.Height());
+    // Check the kinect has an image
+    // NOTE: If it's connected and you're not getting an image, make sure the powerpack is plugged in,
+    //       and it's not already being used by something else.
+    if (imageMD.Pitch() > 0 && depthMD.Pitch() > 0)
+    {
+        sf::Vector2u rgbSize(imageMD.Width(), imageMD.Height());
+        sf::Vector2u depthSize(depthMD.Width(), depthMD.Height());
 
-    cv::Mat rgbImage = cv::Mat(rgbSize.y, rgbSize.x, CV_8UC4, imageMD.Bits());
-    cv::Mat depthData = cv::Mat(depthSize.y, depthSize.x, CV_16UC2, depthMD.Bits());
-    cv::cvtColor(rgbImage, rgbImage, cv::COLOR_RGBA2RGB); // The 4th byte is just padding, so discard it
-    
-    // Image processing
-    std::vector<cv::Mat> depthOut(2);
-    cv::split(depthData, depthOut);
-    cv::Mat depthImage = depthOut[1];
+        rgbImage = cv::Mat(rgbSize.y, rgbSize.x, CV_8UC4, imageMD.Bits());
+        cv::Mat depthData = cv::Mat(depthSize.y, depthSize.x, CV_16UC2, depthMD.Bits());
 
-    cv::normalize(depthImage, depthImage, 0.0, 255.0, cv::NORM_MINMAX, CV_8U);
+        cv::cvtColor(rgbImage, rgbImage, cv::COLOR_RGBA2RGB); // The 4th byte is just padding, so discard it
 
-    depthImage = 255 - depthImage;
-    cv::threshold(depthImage, depthImage, 254, 0, cv::THRESH_TOZERO_INV);
-    
-    // Convert images to OpenGL textures
-    sf::Texture rgbTexture;
-    sf::Texture depthTexture;
+        std::vector<cv::Mat> depthOut(2);
+        cv::split(depthData, depthOut);     // Split the depth and player index
+        depthImage = depthOut[1];
 
-    cv::cvtColor(rgbImage, rgbImage, cv::COLOR_RGB2BGRA); // OpenGL texture must be in BGRA format
-    rgbTexture.create(rgbImage.cols, rgbImage.rows);
-    rgbTexture.update(rgbImage.data, rgbImage.cols, rgbImage.rows, 0, 0);
+        cv::normalize(depthImage, depthImage, 0.0, 255.0, cv::NORM_MINMAX, CV_8U);
 
-    cv::cvtColor(depthImage, depthImage, cv::COLOR_GRAY2BGRA);
-    depthTexture.create(depthImage.cols, depthImage.rows);
-    depthTexture.update(depthImage.data, depthImage.cols, depthImage.rows, 0, 0);
+        depthImage = 255 - depthImage;
+        cv::threshold(depthImage, depthImage, 254, 0, cv::THRESH_TOZERO_INV);
 
-    // Draw to the window
+        // Convert images to OpenGL textures
+        cv::cvtColor(rgbImage, rgbImage, cv::COLOR_RGB2BGRA); // OpenGL texture must be in BGRA format
+        rgbTexture.create(rgbImage.cols, rgbImage.rows);
+        rgbTexture.update(rgbImage.data, rgbImage.cols, rgbImage.rows, 0, 0);
+
+        cv::cvtColor(depthImage, depthImage, cv::COLOR_GRAY2BGRA);
+        depthTexture.create(depthImage.cols, depthImage.rows);
+        depthTexture.update(depthImage.data, depthImage.cols, depthImage.rows, 0, 0);
+    }
+}
+
+void Application::TrackFace() {
+    // TODO
+}
+
+void Application::Draw() {
+
+    Capture();
+
+    TrackFace();
+
+    // Draw rgb and depth textures to the window
     sf::Sprite rgbSprite(rgbTexture);
     sf::Sprite depthSprite(depthTexture);
 
-    depthSprite.move(rgbSize.x, (rgbSize.y - depthSize.y) / 2);
+    depthSprite.move(rgbImage.cols, (rgbImage.rows - depthImage.rows) / 2);
 
     window->draw(rgbSprite);
     window->draw(depthSprite);
+
+    //sf::Sprite wolf_sprite(wolf_tex);
+    //window->draw(wolf_sprite);
 }
+

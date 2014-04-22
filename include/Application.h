@@ -19,9 +19,9 @@ class Application
 
 public:
     std::vector<std::wstring> args;
-    sf::RenderWindow *window;
+    sf::RenderWindow *window = nullptr;
 
-    kinect::nui::Kinect *kinect;
+    kinect::nui::Kinect *kinect = nullptr;
     kinect::nui::ImageStream *videoStream;
     kinect::nui::ImageStream *depthStream;
 
@@ -36,6 +36,15 @@ protected:
 
 private:
     sf::Texture wolf_tex;
+
+    sf::Texture depthTexture;
+    sf::Texture rgbTexture;
+
+    cv::Mat rgbImage;
+    cv::Mat depthImage;
+
+    void Capture();
+    void TrackFace();
     
 };
 

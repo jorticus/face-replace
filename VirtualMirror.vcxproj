@@ -36,7 +36,6 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="F:\Cpp\SFML\SFML.Win32.Debug.props" />
-    <Import Project="F:\Cpp\kinect_sdk_sandbox\KinectCppWrapper.Win32.Debug.props" />
     <Import Project="F:\Cpp\KinectSDK\Microsoft Kinect SDK.props" />
     <Import Project="F:\Cpp\KinectDTK\Microsoft Kinect DTK.props" />
     <Import Project="F:\Cpp\opencv\OpenCV.300.Win32.Debug.props" />
@@ -44,7 +43,9 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="F:\Cpp\SFML\SFML.Win32.Release.props" />
-    <Import Project="F:\Cpp\kinect_sdk_sandbox\KinectCppWrapper.Win32.Release.props" />
+    <Import Project="F:\Cpp\KinectSDK\Microsoft Kinect SDK.props" />
+    <Import Project="F:\Cpp\KinectDTK\Microsoft Kinect DTK.props" />
+    <Import Project="F:\Cpp\opencv\OpenCV.300.Win32.Release.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -60,11 +61,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;Msdmo.lib;dmoguids.lib;amstrmid.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -76,25 +78,49 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;Msdmo.lib;dmoguids.lib;amstrmid.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Application.h" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
+    <ClInclude Include="include\FaceTracker.h" />
+    <ClInclude Include="include\Application.h" />
+    <ClInclude Include="include\kinect\nui\AudioStream.h" />
+    <ClInclude Include="include\kinect\nui\ImageFrame.h" />
+    <ClInclude Include="include\kinect\nui\ImageStream.h" />
+    <ClInclude Include="include\kinect\nui\Kinect.h" />
+    <ClInclude Include="include\kinect\nui\KinectContext.h" />
+    <ClInclude Include="include\kinect\nui\KinectListener.h" />
+    <ClInclude Include="include\kinect\nui\SkeletonEngine.h" />
+    <ClInclude Include="include\kinect\nui\SkeletonFrame.h" />
+    <ClInclude Include="include\kinect\nui\StaticMediaBuffer.h" />
+    <ClInclude Include="include\kinect\nui\WaveFileWriter.h" />
+    <ClInclude Include="include\kinect\nui\WaveOutput.h" />
+    <ClInclude Include="include\resource.h" />
+    <ClInclude Include="include\stdafx.h" />
+    <ClInclude Include="include\targetver.h" />
+    <ClInclude Include="include\win32\Event.h" />
+    <ClInclude Include="include\win32\SpinLock.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Application.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="src\FaceTracker.cpp" />
+    <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\kinect\AudioStream.cpp" />
+    <ClCompile Include="src\kinect\ImageFrame.cpp" />
+    <ClCompile Include="src\kinect\ImageStream.cpp" />
+    <ClCompile Include="src\kinect\Kinect.cpp" />
+    <ClCompile Include="src\kinect\KinectContext.cpp" />
+    <ClCompile Include="src\kinect\SkeletonEngine.cpp" />
+    <ClCompile Include="src\kinect\SkeletonFrame.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\stdafx.cpp" />
+    <ClCompile Include="src\win32\Event.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VirtualMirror.rc" />
