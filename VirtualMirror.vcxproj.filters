@@ -75,6 +75,12 @@
     <ClInclude Include="include\FaceTracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\FaceTrackerBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\FPSCounter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp">
@@ -111,6 +117,9 @@
       <Filter>Source Files\KinectWrapper</Filter>
     </ClCompile>
     <ClCompile Include="src\FaceTracker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\FPSCounter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -7,11 +7,14 @@
 #include "stdafx.h"
 #include "Application.h"
 
+using namespace std;
+using namespace sf;
+
 Application::Application(int argc, _TCHAR* argv[])
 {
     // Convert command-line arguments to std::vector
     for (int i = 0; i < argc; i++)
-        this->args.push_back(std::wstring(argv[i]));
+        this->args.push_back(wstring(argv[i]));
 }
 
 
@@ -34,31 +37,32 @@ int Application::Main()
     while (this->window->isOpen()) {
 
         // Handle screen events
-        sf::Event event;
-        while (this->window->pollEvent(event)) {
+        Event event;
+        while (window->pollEvent(event)) {
             switch (event.type) {
-            case sf::Event::Closed:
+            case Event::Closed:
                 this->window->close();
                 break;
 
-            case sf::Event::Resized:
+            case Event::Resized:
                 glViewport(0, 0, event.size.width, event.size.height);
                 break;
 
-            case sf::Event::KeyPressed:
-                if (event.key.code == sf::Keyboard::Escape)
-                    this->window->close();
+            case Event::KeyPressed:
+                if (event.key.code == Keyboard::Escape)
+                    window->close();
                 break;
             }
         }
 
+        fpsCounter.BeginPeriod();
+
         // Drawing
-        //this->window->clear();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         Draw();
+        window->display();
 
-        this->window->display();
+        fpsCounter.EndPeriod();
     }
 
     return 0;
@@ -67,17 +71,17 @@ int Application::Main()
 
 void Application::Initialize() {
     // Load textures
-    std::cout << "Loading textures" << std::endl;
+    cout << "Loading textures" << endl;
 
     /*if (!wolf_tex.loadFromFile("wolf.png"))
         throw std::exception("Couldn't load texture");*/
 
     // Initialize the Kinect camera
-    std::cout << "Initializing Kinect" << std::endl;
+    cout << "Initializing Kinect" << endl;
     kinect = new kinect::nui::Kinect();
     kinect->Initialize(NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH);
 
-    std::cout << "Opening kinect video streams" << std::endl;
+    cout << "Opening kinect video streams" << endl;
     videoStream = &kinect->VideoStream();
     depthStream = &kinect->DepthStream();
 
@@ -86,7 +90,7 @@ void Application::Initialize() {
 
 //    kinect->WaitAndUpdateAll(); // Force connect
    
-    std::cout << "Initializing Kinect Face Tracker Library" << std::endl;
+    cout << "Initializing Kinect Face Tracker Library" << endl;
 
     faceTracker = new FaceTracker();
 
@@ -94,7 +98,7 @@ void Application::Initialize() {
     //std::cout << "Initializing Window" << std::endl;
 
     // OpenGL-specific settings
-    sf::ContextSettings settings;
+    ContextSettings settings;
     settings.depthBits = 24;
     settings.stencilBits = 8;
     settings.antialiasingLevel = 4;
@@ -103,18 +107,22 @@ void Application::Initialize() {
 
     if (this->fullscreen) {
         // Return all allowable full-screen modes, sorted from best to worst.
-        auto modes = sf::VideoMode::getFullscreenModes();
+        auto modes = VideoMode::getFullscreenModes();
 
         // Use the best mode to set the window to be full-screen
-        this->window = new sf::RenderWindow(modes[0], this->title, sf::Style::Fullscreen, settings);
+        this->window = new RenderWindow(modes[0], this->title, Style::Fullscreen, settings);
     }
     else {
         // Otherwise use the specified width/height to create a windowed window
-        this->window = new sf::RenderWindow(sf::VideoMode(this->width, this->height), this->title, sf::Style::Default, settings);
+        window = new RenderWindow(VideoMode(this->width, this->height), this->title, Style::Default, settings);
     }
     this->window->setVerticalSyncEnabled(true);
 
-    std::cout << "Started" << std::endl;
+    // Load default font
+    if (!font.loadFromFile("data\\ProFontWindows.ttf"))
+        throw runtime_error("Could not load font");
+
+    cout << "Started" << endl;
 }
 
 void Application::Capture() {
@@ -137,7 +145,7 @@ void Application::Capture() {
 
         cv::cvtColor(rgbImage, rgbImage, cv::COLOR_RGBA2RGB); // The 4th byte is just padding, so discard it
 
-        std::vector<cv::Mat> depthOut(2);
+        vector<cv::Mat> depthOut(2);
         cv::split(depthData, depthOut);     // Split the depth and player index
         depthImage = depthOut[1];
 
@@ -158,7 +166,8 @@ void Application::Capture() {
 }
 
 void Application::TrackFace() {
-    // TODO
+   faceTracker->Track(rgbImage);
+
 }
 
 void Application::Draw() {
@@ -168,15 +177,41 @@ void Application::Draw() {
     TrackFace();
 
     // Draw rgb and depth textures to the window
-    sf::Sprite rgbSprite(rgbTexture);
-    sf::Sprite depthSprite(depthTexture);
+    Sprite rgbSprite(rgbTexture);
+    Sprite depthSprite(depthTexture);
 
     depthSprite.move(rgbImage.cols, (rgbImage.rows - depthImage.rows) / 2);
 
     window->draw(rgbSprite);
     window->draw(depthSprite);
 
-    //sf::Sprite wolf_sprite(wolf_tex);
-    //window->draw(wolf_sprite);
+    string fps = std::to_string(fpsCounter.GetAverageFps());
+
+    // Draw status text
+    Text text_status(GetTrackingStatus(), font, 18);
+    Text text_fps(fps + " FPS", font, 18);
+
+    text_fps.move(8, 0);
+    text_fps.setColor(Color::White);
+    window->draw(text_fps);
+
+    text_status.move(8, 20);
+    text_status.setColor(Color::White);
+    window->draw(text_status);
 }
 
+string Application::GetTrackingStatus() {
+    if (faceTracker != nullptr) {
+        HRESULT hr = faceTracker->GetTrackStatus();
+
+        if (FAILED(hr)) {
+            return ft_error("", hr).what();
+        }
+        else {
+            return "Tracking";
+        }
+    }
+    else {
+        return "Uninitialized";
+    }
+}

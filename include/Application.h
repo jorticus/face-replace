@@ -9,6 +9,7 @@
 #include <kinect\nui\ImageFrame.h>
 
 #include "FaceTracker.h"
+#include "utils\FPSCounter.h"
 
 
 class Application
@@ -39,6 +40,11 @@ protected:
     void Draw();
 
 private:
+    FPSCounter fpsCounter;
+    sf::Clock clock;
+
+    sf::Font font;
+
     sf::Texture wolf_tex;
 
     sf::Texture depthTexture;
@@ -49,6 +55,8 @@ private:
 
     void Capture();
     void TrackFace();
+
+    std::string GetTrackingStatus();
     
 };
 

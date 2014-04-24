@@ -89,8 +89,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\utils\FPSCounter.h" />
     <ClInclude Include="include\FaceTracker.h" />
     <ClInclude Include="include\Application.h" />
+    <ClInclude Include="include\FaceTrackerBase.h" />
     <ClInclude Include="include\kinect\nui\AudioStream.h" />
     <ClInclude Include="include\kinect\nui\ImageFrame.h" />
     <ClInclude Include="include\kinect\nui\ImageStream.h" />
@@ -109,6 +111,7 @@
     <ClInclude Include="include\win32\SpinLock.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\utils\FPSCounter.cpp" />
     <ClCompile Include="src\FaceTracker.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\kinect\AudioStream.cpp" />
