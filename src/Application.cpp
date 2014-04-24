@@ -7,10 +7,13 @@
 #include "stdafx.h"
 #include "Application.h"
 
+#include <boost\format.hpp>
+
 using namespace std;
 using namespace sf;
 
-Application::Application(int argc, _TCHAR* argv[])
+Application::Application(int argc, _TCHAR* argv[]) :
+    fpsCounter(32)
 {
     // Convert command-line arguments to std::vector
     for (int i = 0; i < argc; i++)
@@ -87,6 +90,7 @@ void Application::Initialize() {
 
     videoStream->Open(NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480);
     depthStream->Open(NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480);
+    //depthStream->Open(NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_320x240);
 
 //    kinect->WaitAndUpdateAll(); // Force connect
    
@@ -95,7 +99,18 @@ void Application::Initialize() {
     faceTracker = new FaceTracker();
 
 
-    //std::cout << "Initializing Window" << std::endl;
+    cout << "Loading resources" << endl;
+
+    // Load default font
+    if (!font.loadFromFile(this->default_font_file))
+        throw runtime_error("Could not load font \"" + default_font_file + "\"");
+
+    // Load shaders
+    if (!outlineShader.loadFromFile("data\\outline-shader.frag", Shader::Type::Fragment))
+        throw runtime_error("Could not load shader \"outline-shader.frag\"");
+
+    outlineShader.setParameter("outlineColor", Color::Black);
+    outlineShader.setParameter("outlineWidth", 0.008f);
 
     // OpenGL-specific settings
     ContextSettings settings;
@@ -118,10 +133,6 @@ void Application::Initialize() {
     }
     this->window->setVerticalSyncEnabled(true);
 
-    // Load default font
-    if (!font.loadFromFile("data\\ProFontWindows.ttf"))
-        throw runtime_error("Could not load font");
-
     cout << "Started" << endl;
 }
 
@@ -137,36 +148,56 @@ void Application::Capture() {
     //       and it's not already being used by something else.
     if (imageMD.Pitch() > 0 && depthMD.Pitch() > 0)
     {
+        // Capture
+
         sf::Vector2u rgbSize(imageMD.Width(), imageMD.Height());
         sf::Vector2u depthSize(depthMD.Width(), depthMD.Height());
 
         rgbImage = cv::Mat(rgbSize.y, rgbSize.x, CV_8UC4, imageMD.Bits());
         cv::Mat depthData = cv::Mat(depthSize.y, depthSize.x, CV_16UC2, depthMD.Bits());
-
+        
         cv::cvtColor(rgbImage, rgbImage, cv::COLOR_RGBA2RGB); // The 4th byte is just padding, so discard it
-
         vector<cv::Mat> depthOut(2);
         cv::split(depthData, depthOut);     // Split the depth and player index
         depthImage = depthOut[1];
 
-        cv::normalize(depthImage, depthImage, 0.0, 255.0, cv::NORM_MINMAX, CV_8U);
 
-        depthImage = 255 - depthImage;
-        cv::threshold(depthImage, depthImage, 254, 0, cv::THRESH_TOZERO_INV);
+
+
+
+        // Display
+
+        cv::Mat depthImageDisplay = depthImage;
+
+        cv::normalize(depthImageDisplay, depthImageDisplay, 0.0, 255.0, cv::NORM_MINMAX, CV_8U);
+
+        depthImageDisplay = 255 - depthImageDisplay;
+
+        // Create a mask for depth pixels with an invalid value
+        //cv::Mat depthErrorMask;
+        //cv::threshold(depthImageDisplay, depthErrorMask, 254, 0, cv::THRESH_TOZERO);
+
+        //cv::medianBlur(depthImage, depthImage, 13);
+
+        // Map depth to JET color map, and mask any invalid pixels to 0
+        cv::applyColorMap(depthImageDisplay, depthImageDisplay, cv::COLORMAP_JET);
+        //cv::cvtColor(depthErrorMask, depthErrorMask, cv::COLOR_GRAY2RGB);
+        //cv::bitwise_and(depthImageDisplay, ~depthErrorMask, depthImageDisplay);
 
         // Convert images to OpenGL textures
         cv::cvtColor(rgbImage, rgbImage, cv::COLOR_RGB2BGRA); // OpenGL texture must be in BGRA format
         rgbTexture.create(rgbImage.cols, rgbImage.rows);
         rgbTexture.update(rgbImage.data, rgbImage.cols, rgbImage.rows, 0, 0);
 
-        cv::cvtColor(depthImage, depthImage, cv::COLOR_GRAY2BGRA);
-        depthTexture.create(depthImage.cols, depthImage.rows);
-        depthTexture.update(depthImage.data, depthImage.cols, depthImage.rows, 0, 0);
+        //cv::cvtColor(depthImageDisplay, depthImageDisplay, cv::COLOR_GRAY2BGRA);
+        cv::cvtColor(depthImageDisplay, depthImageDisplay, cv::COLOR_RGB2BGRA);
+        depthTexture.create(depthImageDisplay.cols, depthImageDisplay.rows);
+        depthTexture.update(depthImageDisplay.data, depthImageDisplay.cols, depthImageDisplay.rows, 0, 0);
     }
 }
 
 void Application::TrackFace() {
-   faceTracker->Track(rgbImage);
+   faceTracker->Track(rgbImage, depthImage);
 
 }
 
@@ -185,19 +216,20 @@ void Application::Draw() {
     window->draw(rgbSprite);
     window->draw(depthSprite);
 
-    string fps = std::to_string(fpsCounter.GetAverageFps());
+    string fps = (boost::format("%.1f FPS") % fpsCounter.GetAverageFps()).str();
+    string status = GetTrackingStatus();
 
     // Draw status text
-    Text text_status(GetTrackingStatus(), font, 18);
-    Text text_fps(fps + " FPS", font, 18);
+    Text text_status(status, font, 16);
+    Text text_fps(fps, font, 16);
 
     text_fps.move(8, 0);
     text_fps.setColor(Color::White);
-    window->draw(text_fps);
+    window->draw(text_fps, &outlineShader);
 
     text_status.move(8, 20);
     text_status.setColor(Color::White);
-    window->draw(text_status);
+    window->draw(text_status, &outlineShader);
 }
 
 string Application::GetTrackingStatus() {

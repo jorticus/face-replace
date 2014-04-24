@@ -25,7 +25,7 @@ public:
     FaceTracker();
     ~FaceTracker();
 
-    void Track(cv::Mat &colorImage);
+    void Track(cv::Mat &colorImage, cv::Mat &depthImage);
     HRESULT GetTrackStatus() { return (pFTResult != nullptr) ? pFTResult->GetStatus() : -1; }
 
 private:
@@ -40,7 +40,7 @@ private:
     bool            isTracked;
     HRESULT         last_exc = S_OK;
 
-    void            printTrackingState(HRESULT hr);
+    void            printTrackingState(std::string message, HRESULT hr);
 };
 
 

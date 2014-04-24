@@ -3,10 +3,11 @@
 #include "FaceTracker.h"
 #include <comdef.h>
 
+using namespace std;
 
-ft_error::ft_error(std::string message, HRESULT hr) : runtime_error(NULL)
+ft_error::ft_error(string message, HRESULT hr) : runtime_error(NULL)
 {
-    std::string error_message;
+    string error_message;
 
     switch (hr) {
     case FT_ERROR_INVALID_MODELS:
@@ -54,8 +55,8 @@ ft_error::ft_error(std::string message, HRESULT hr) : runtime_error(NULL)
 
         // Get the COM error message
     default:
-        std::wstring com_error_message = _com_error(hr).ErrorMessage();
-        error_message = std::string(com_error_message.begin(), com_error_message.end()); // wstring to string (don't care about unicode)
+        wstring com_error_message = _com_error(hr).ErrorMessage();
+        error_message = string(com_error_message.begin(), com_error_message.end()); // wstring to string (don't care about unicode)
     }
 
     this->msg = message + error_message;
@@ -67,8 +68,8 @@ FaceTracker::FaceTracker()
     isTracked = false;
 
     HRESULT hr;
-    FT_CAMERA_CONFIG videoConfig = { 640, 480, 1.0 };
-    FT_CAMERA_CONFIG depthConfig = { 640, 480 };
+    FT_CAMERA_CONFIG videoConfig = { 640, 480, 1.0 };   // TODO: Don't hard-code these values
+    FT_CAMERA_CONFIG depthConfig = { 640, 480 }; 
 
     pFaceTracker = FTCreateFaceTracker(NULL);
     if (pFaceTracker == nullptr)
@@ -86,11 +87,11 @@ FaceTracker::FaceTracker()
     // RGB Image
     pColorImage = FTCreateImage();
     if (pColorImage == nullptr || FAILED(hr = pColorImage->Allocate(videoConfig.Width, videoConfig.Height, FTIMAGEFORMAT_UINT8_B8G8R8X8)))
-        throw std::exception("Could not allocate colour image for face tracker");
+        throw runtime_error("Could not allocate colour image for face tracker");
 
     pDepthImage = FTCreateImage();
     if (pDepthImage == nullptr || FAILED(hr = pDepthImage->Allocate(depthConfig.Width, depthConfig.Height, FTIMAGEFORMAT_UINT16_D13P3)))
-        throw std::exception("Could not allocate depth image for face tracker");
+        throw runtime_error("Could not allocate depth image for face tracker");
 
     sensorData.pVideoFrame = pColorImage;
     sensorData.pDepthFrame = pDepthImage;
@@ -98,31 +99,32 @@ FaceTracker::FaceTracker()
     sensorData.ViewOffset = { 0, 0 };
 }
 
-void FaceTracker::Track(cv::Mat &colorImage)
+void FaceTracker::Track(cv::Mat &colorImage, cv::Mat &depthImage)
 {
     HRESULT hr;
 
-
-
     FT_SENSOR_DATA sd(pColorImage, pDepthImage, 1.0f);
-
     
     // Get camera frame buffer
     hr = pColorImage->Attach(colorImage.cols, colorImage.rows, colorImage.data, FTIMAGEFORMAT_UINT8_B8G8R8X8, colorImage.cols*colorImage.channels());
     if (FAILED(hr))
-        throw ft_error("Error attaching image buffer: ", hr);
+        throw ft_error("Error attaching color image buffer: ", hr);
 
+    hr = pDepthImage->Attach(depthImage.cols, depthImage.rows, depthImage.data, FTIMAGEFORMAT_UINT16_D13P3, depthImage.cols);
+    if (FAILED(hr))
+        throw ft_error("Error attaching depth image buffer: ", hr);
 
     if (!isTracked) {
         // Initiate face tracking
         hr = pFaceTracker->StartTracking(&sd, NULL, NULL, pFTResult);
         if (SUCCEEDED(hr) && (SUCCEEDED(hr = pFTResult->GetStatus()))) {
             isTracked = true;
+            cout << "Initial track found" << endl;
         }
         else {
             isTracked = false;
         }
-        printTrackingState(hr);
+        printTrackingState("StartTracking: ", hr);
     }
 
     else {
@@ -134,19 +136,19 @@ void FaceTracker::Track(cv::Mat &colorImage)
         else {
             isTracked = false;
         }
-        printTrackingState(hr);
+        //printTrackingState("ContinueTracking: ", hr);
     }
 
     // Do something with the result
     
 }
 
-void FaceTracker::printTrackingState(HRESULT hr) {
+void FaceTracker::printTrackingState(string message, HRESULT hr) {
     if (hr != last_exc) {
         if (FAILED(hr))
-            std::cout << ft_error("Tracking error: ", hr).what() << std::endl;
+            cout << ft_error(message, hr).what() << endl;
         else
-            std::cout << "Tracking successful" << std::endl;
+            cout << "Tracking successful" << endl;
     }
     last_exc = hr;
 }

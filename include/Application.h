@@ -20,6 +20,9 @@ class Application
     const int height = 480;
     const int fullscreen = false;    // NOTE: if fullscreen is true, width/height are ignored and the native screen resolution is used instead.
 
+    //const std::string default_font_file = "data\\TitilliumWeb-Bold.ttf";
+    const std::string default_font_file = "data\\Exo-Bold.ttf";
+
 public:
     std::vector<std::wstring> args;
     sf::RenderWindow *window = nullptr;
@@ -41,8 +44,8 @@ protected:
 
 private:
     FPSCounter fpsCounter;
-    sf::Clock clock;
 
+    sf::Font fps_font;
     sf::Font font;
 
     sf::Texture wolf_tex;
@@ -57,6 +60,8 @@ private:
     void TrackFace();
 
     std::string GetTrackingStatus();
+
+    sf::Shader outlineShader;
     
 };
 
