@@ -30,50 +30,14 @@
     <ClInclude Include="include\targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\kinect\nui\AudioStream.h">
-      <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
     <ClInclude Include="include\win32\Event.h">
-      <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kinect\nui\ImageFrame.h">
-      <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kinect\nui\ImageStream.h">
-      <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kinect\nui\Kinect.h">
-      <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kinect\nui\KinectContext.h">
-      <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kinect\nui\KinectListener.h">
       <Filter>Header Files\KinectWrapper</Filter>
     </ClInclude>
     <ClInclude Include="include\resource.h">
       <Filter>Header Files\KinectWrapper</Filter>
     </ClInclude>
-    <ClInclude Include="include\kinect\nui\SkeletonEngine.h">
-      <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kinect\nui\SkeletonFrame.h">
-      <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
     <ClInclude Include="include\win32\SpinLock.h">
       <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kinect\nui\StaticMediaBuffer.h">
-      <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kinect\nui\WaveFileWriter.h">
-      <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="include\kinect\nui\WaveOutput.h">
-      <Filter>Header Files\KinectWrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="include\FaceTracker.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\FaceTrackerBase.h">
       <Filter>Header Files</Filter>
@@ -98,37 +62,10 @@
     <ClCompile Include="src\stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\kinect\AudioStream.cpp">
-      <Filter>Source Files\KinectWrapper</Filter>
-    </ClCompile>
     <ClCompile Include="src\win32\Event.cpp">
       <Filter>Source Files\KinectWrapper</Filter>
     </ClCompile>
-    <ClCompile Include="src\kinect\ImageFrame.cpp">
-      <Filter>Source Files\KinectWrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kinect\ImageStream.cpp">
-      <Filter>Source Files\KinectWrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kinect\Kinect.cpp">
-      <Filter>Source Files\KinectWrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kinect\KinectContext.cpp">
-      <Filter>Source Files\KinectWrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kinect\SkeletonEngine.cpp">
-      <Filter>Source Files\KinectWrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="src\kinect\SkeletonFrame.cpp">
-      <Filter>Source Files\KinectWrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="src\FaceTracker.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\utils\FPSCounter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\utils\RunningAverage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\HeadTracker.cpp">

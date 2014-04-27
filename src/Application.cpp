@@ -11,6 +11,7 @@
 
 using namespace std;
 using namespace sf;
+using namespace openni;
 
 Application::Application(int argc, _TCHAR* argv[]) :
     fpsCounter(32),
@@ -24,14 +25,11 @@ Application::Application(int argc, _TCHAR* argv[]) :
 
 Application::~Application()
 {
-    if (this->headTracker != nullptr)
-        delete this->headTracker;
+    OpenNI::shutdown();
 
-    if (this->faceTracker != nullptr)
-        delete this->faceTracker;
-
-    if (this->kinect != nullptr)
-        delete this->kinect;
+    device.close();
+    depthStream.destroy();
+    colorStream.destroy();
 
     if (this->window != nullptr)
         delete this->window;
@@ -39,7 +37,9 @@ Application::~Application()
 
 int Application::Main()
 {
-    this->Initialize();
+    InitializeResources();
+    InitializeOpenNI();
+    InitializeWindow();
 
     while (this->window->isOpen()) {
 
@@ -62,49 +62,22 @@ int Application::Main()
             }
         }
 
-        fpsCounter.BeginPeriod();
+        //fpsCounter.BeginPeriod();
 
-        // Drawing
+        // Drawing loop
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         Draw();
         window->display();
 
         fpsCounter.EndPeriod();
+        fpsCounter.BeginPeriod();
     }
 
     return 0;
 }
 
 
-void Application::Initialize() {
-    // Load textures
-    cout << "Loading textures" << endl;
-
-    /*if (!wolf_tex.loadFromFile("wolf.png"))
-        throw std::exception("Couldn't load texture");*/
-
-    // Initialize the Kinect camera
-    cout << "Initializing Kinect" << endl;
-    kinect = new kinect::nui::Kinect();
-    kinect->Initialize(NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH);
-
-    cout << "Opening kinect video streams" << endl;
-    videoStream = &kinect->VideoStream();
-    depthStream = &kinect->DepthStream();
-
-    videoStream->Open(NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480);
-    depthStream->Open(NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480);
-    //depthStream->Open(NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_320x240);
-
-//    kinect->WaitAndUpdateAll(); // Force connect
-   
-    cout << "Initializing Kinect Face Tracker Library" << endl;
-
-    faceTracker = new FaceTracker();
-
-    headTracker = new HeadTracker();
-
-
+void Application::InitializeResources() {
     cout << "Loading resources" << endl;
 
     // Load default font
@@ -117,7 +90,42 @@ void Application::Initialize() {
 
     outlineShader.setParameter("outlineColor", Color::Black);
     outlineShader.setParameter("outlineWidth", 0.008f);
+}
 
+void Application::InitializeOpenNI() {
+    // Initialize the Kinect camera
+    cout << "Initializing Kinect Camera" << endl;
+    openni::Status rc = openni::STATUS_OK;
+
+    rc = OpenNI::initialize();
+    if (rc != openni::STATUS_OK)
+        throw runtime_error(string("Could not initialize OpenNI library: ") + string(OpenNI::getExtendedError()));
+
+    rc = device.open(openni::ANY_DEVICE);
+    if (rc != openni::STATUS_OK)
+        throw runtime_error(string("Device open failed: ") + string(OpenNI::getExtendedError()));
+
+    rc = depthStream.create(device, openni::SENSOR_DEPTH);
+    if (rc != openni::STATUS_OK)
+        throw runtime_error(string("Couldn't find depth stream: ") + string(OpenNI::getExtendedError()));
+
+    rc = depthStream.start();
+    if (rc != openni::STATUS_OK)
+        throw runtime_error(string("Couldn't start depth stream: ") + string(OpenNI::getExtendedError()));
+
+    rc = colorStream.create(device, openni::SENSOR_COLOR);
+    if (rc != openni::STATUS_OK)
+        throw runtime_error(string("Couldn't find color stream: ") + string(OpenNI::getExtendedError()));
+
+    rc = colorStream.start();
+    if (rc != openni::STATUS_OK)
+        throw runtime_error(string("Couldn't start color stream: ") + string(OpenNI::getExtendedError()));
+
+    if (!depthStream.isValid() || !colorStream.isValid())
+        throw runtime_error("No valid streams");
+}
+
+void Application::InitializeWindow() {
     // OpenGL-specific settings
     ContextSettings settings;
     settings.depthBits = 24;
@@ -128,14 +136,14 @@ void Application::Initialize() {
 
     if (this->fullscreen) {
         // Return all allowable full-screen modes, sorted from best to worst.
-        auto modes = VideoMode::getFullscreenModes();
+        auto modes = sf::VideoMode::getFullscreenModes();
 
         // Use the best mode to set the window to be full-screen
         this->window = new RenderWindow(modes[0], this->title, Style::Fullscreen, settings);
     }
     else {
         // Otherwise use the specified width/height to create a windowed window
-        window = new RenderWindow(VideoMode(this->width, this->height), this->title, Style::Default, settings);
+        window = new RenderWindow(sf::VideoMode(this->width, this->height), this->title, Style::Default, settings);
     }
     this->window->setVerticalSyncEnabled(true);
 
@@ -144,39 +152,54 @@ void Application::Initialize() {
 
 void Application::Capture() {
 
-    // Capture frame from kinect
-    kinect->WaitAndUpdateAll();
-    kinect::nui::VideoFrame imageMD(*videoStream);
-    kinect::nui::DepthFrame depthMD(*depthStream);
+    //if (!depthStream.isValid() || !colorStream.isValid())
+    //    throw runtime_error("Error reading depth/color stream");
 
-    // Check the kinect has an image
-    // NOTE: If it's connected and you're not getting an image, make sure the powerpack is plugged in,
-    //       and it's not already being used by something else.
-    if (imageMD.Pitch() > 0 && depthMD.Pitch() > 0)
-    {
-        // Capture
+    int changedIndex;
+    auto streams = new VideoStream*[2] {&colorStream, &depthStream};
+    //auto frames = new VideoFrameRef[2];
 
-        sf::Vector2u rgbSize(imageMD.Width(), imageMD.Height());
-        sf::Vector2u depthSize(depthMD.Width(), depthMD.Height());
+    openni::Status rc = OpenNI::waitForAnyStream(streams, 2, &changedIndex);
+    if (rc != openni::STATUS_OK)
+        throw runtime_error("Could not read depth sensor");
 
-        rgbImage = cv::Mat(rgbSize.y, rgbSize.x, CV_8UC4, imageMD.Bits());
-        cv::Mat depthData = cv::Mat(depthSize.y, depthSize.x, CV_16UC2, depthMD.Bits());
-        
-        cv::cvtColor(rgbImage, rgbImage, cv::COLOR_RGBA2RGB); // The 4th byte is just padding, so discard it
-        vector<cv::Mat> depthOut(2);
-        cv::split(depthData, depthOut);     // Split the depth and player index
-        depthRaw = depthOut[1];
-        depthRaw.convertTo(depthImage, CV_32F);
+    switch (changedIndex) {
+    case 0: {
+                rc = colorStream.readFrame(&colorFrame);
+                if (rc != openni::STATUS_OK || !colorFrame.isValid())
+                    throw runtime_error("Error reading color stream");
 
+                // Color frames are in RGB888 pixel format (ie. 24 bits per pixel)
+                colorImage = cv::Mat(colorFrame.getHeight(), colorFrame.getWidth(), CV_8UC3, (void*)colorFrame.getData());
+                break;
+    }
+    case 1: {
+                rc = depthStream.readFrame(&depthFrame);
+                if (rc != openni::STATUS_OK || !depthFrame.isValid())
+                    throw runtime_error("Error reading depth stream");
+
+                // Depth frames are raw, 16 bits per pixel
+                depthRaw = cv::Mat(depthFrame.getHeight(), depthFrame.getWidth(), CV_16U, (void*)depthFrame.getData());
+                depthRaw.convertTo(depthImage, CV_32F);  // Most OpenCV functions only support 8U or 32F
+                break;
+    }
+    default:
+        throw runtime_error("Invalid stream index");
+    }
+}
+
+void Application::Process() {
+
+    if (colorFrame.isValid() && depthFrame.isValid()) {
 
         // Segment background
         /*for (int row = 0; row < depthImage.rows; row++) {
             uint16_t* p = reinterpret_cast<uint16_t*>(depthImage.ptr(row));
             for (int x = 0; x < depthImage.cols; x++) {
-                *p = (*p < this->depth_threshold) ? *p : this->depth_threshold;
-                p++;
+            *p = (*p < this->depth_threshold) ? *p : this->depth_threshold;
+            p++;
             }
-        }*/
+            }*/
 
         cv::threshold(depthImage, depthImage, 2000.0, 0.0, cv::THRESH_TOZERO_INV);
 
@@ -186,8 +209,8 @@ void Application::Capture() {
         //cv::GaussianBlur(depthImage, depthImage, cv::Size(15, 15), 0, 0);
 
         //cv::Sobel(depthImage, depthImage, CV_32F, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT);
-        
-        
+
+
 
         // Display
 
@@ -209,43 +232,49 @@ void Application::Capture() {
         //cv::bitwise_and(depthImageDisplay, ~depthErrorMask, depthImageDisplay);
 
         // Convert images to OpenGL textures
-        cv::cvtColor(rgbImage, rgbImage, cv::COLOR_RGB2BGRA); // OpenGL texture must be in BGRA format
-        rgbTexture.create(rgbImage.cols, rgbImage.rows);
-        rgbTexture.update(rgbImage.data, rgbImage.cols, rgbImage.rows, 0, 0);
+        cv::cvtColor(colorImage, colorImage, cv::COLOR_RGB2BGRA); // OpenGL texture must be in BGRA format
+        colorTexture.create(colorImage.cols, colorImage.rows);
+        colorTexture.update(colorImage.data, colorImage.cols, colorImage.rows, 0, 0);
 
         //cv::cvtColor(depthImageDisplay, depthImageDisplay, cv::COLOR_GRAY2BGRA);
         cv::cvtColor(depthImageDisplay, depthImageDisplay, cv::COLOR_RGB2BGRA);
         depthTexture.create(depthImageDisplay.cols, depthImageDisplay.rows);
         depthTexture.update(depthImageDisplay.data, depthImageDisplay.cols, depthImageDisplay.rows, 0, 0);
+
     }
 }
 
 void Application::TrackFace() {
-   faceTracker->Track(rgbImage, depthImage);
+   //faceTracker->Track(rgbImage, depthImage);
 
-   trackReliability.AddSample(faceTracker->isTracked);
+   //trackReliability.AddSample(faceTracker->isTracked);
 }
 
 void Application::Draw() {
+    float raw_depth = NAN;
 
     Capture();
+    Process();
 
     // Draw rgb and depth textures to the window
-    Vector2f rgbLocation(0, 0);
-    Vector2f depthLocation(rgbImage.cols, (rgbImage.rows - depthImage.rows) / 2);
+    if (colorFrame.isValid() && depthFrame.isValid()) {
+        Vector2f rgbLocation(0, 0);
+        Vector2f depthLocation(colorImage.cols, (colorImage.rows - depthImage.rows) / 2);
 
-    Sprite rgbSprite(rgbTexture);
-    Sprite depthSprite(depthTexture);
+        Sprite rgbSprite(colorTexture);
+        Sprite depthSprite(depthTexture);
 
-    rgbSprite.move(rgbLocation);
-    depthSprite.move(depthLocation);
+        rgbSprite.move(rgbLocation);
+        depthSprite.move(depthLocation);
 
-    window->draw(rgbSprite);
-    window->draw(depthSprite);
+        window->draw(rgbSprite);
+        window->draw(depthSprite);
+
+        //raw_depth = depthImage.at<float>(cv::Point(static_cast<int>(100), static_cast<int>(100)));
+    }
 
 
-
-
+    /*
 
     //TrackFace();
 
@@ -275,17 +304,17 @@ void Application::Draw() {
     std::vector<cv::KeyPoint> keypoints;
     detector.detect(img, keypoints);
 
-    /*for (int i = 0; i < keypoints.size(); i++) {
-        auto keypoint = keypoints[i];
-        CircleShape dot(keypoint.size, 6);
+    for (int i = 0; i < keypoints.size(); i++) {
+    auto keypoint = keypoints[i];
+    CircleShape dot(keypoint.size, 6);
 
-        dot.setFillColor(Color::Green);
-        dot.move(keypoint.pt.x + depthLocation.x, keypoint.pt.y + depthLocation.y);
+    dot.setFillColor(Color::Green);
+    dot.move(keypoint.pt.x + depthLocation.x, keypoint.pt.y + depthLocation.y);
 
 
-        
-        window->draw(dot);
-    }*/
+
+    window->draw(dot);
+    }
 
 
 
@@ -308,49 +337,37 @@ void Application::Draw() {
     dot.move(face_center);
 
     window->draw(dot);
-
+    */
 
     // Calculate distance at face center
-    uint16_t raw_depth = depthRaw.at<uint16_t>(cv::Point(static_cast<int>(face_center.x), static_cast<int>(face_center.y)));
+
 
 
 
     // Draw status text
-    Text text_status(GetTrackingStatus(), font, 16);
     Text text_fps((boost::format("%.1f FPS") % fpsCounter.GetAverageFps()).str(), font, 16);
-    Text text_track((boost::format("Reliability %.2f%%") % (trackReliability.GetAverage() * 100.0f)).str(), font, 16);
-    Text text_dist((boost::format("Distance %.1fmm") % raw_depth).str(), font, 16);
-    //TODO: Distance from head, for quantifying my results
-
     text_fps.move(8, 0);
     text_fps.setColor(Color::White);
     window->draw(text_fps, &outlineShader);
 
+    Text text_status(GetTrackingStatus(), font, 16);
+    text_status.move(8, 20);
+    text_status.setColor(Color::White);
+    window->draw(text_status, &outlineShader);
+
+    Text text_track((boost::format("Reliability %.2f%%") % (trackReliability.GetAverage() * 100.0f)).str(), font, 16);
     text_track.move(100, 0);
     text_track.setColor(Color::White);
     window->draw(text_track, &outlineShader);
 
+    Text text_dist(
+        (!isnan(raw_depth)) ? (boost::format("Distance %.1fmm") % raw_depth).str() : "Distance --", 
+        font, 16);
     text_dist.move(270, 0);
     text_dist.setColor(Color::White);
     window->draw(text_dist, &outlineShader);
-
-    text_status.move(8, 20);
-    text_status.setColor(Color::White);
-    window->draw(text_status, &outlineShader);
 }
 
 string Application::GetTrackingStatus() {
-    if (faceTracker != nullptr) {
-        HRESULT hr = faceTracker->GetTrackStatus();
-
-        if (FAILED(hr)) {
-            return ft_error("", hr).what();
-        }
-        else {
-            return "Tracking";
-        }
-    }
-    else {
-        return "Uninitialized";
-    }
+    return "Unknown";
 }

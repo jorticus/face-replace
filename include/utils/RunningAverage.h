@@ -7,7 +7,13 @@ template<class T>
 class RunningAverage
 {
 public:
-    RunningAverage(int samples = 128) : max_samples(samples), history(samples), count(0), idx(0) {}
+    RunningAverage(int samples = 128) : 
+        max_samples(samples), history(samples), 
+        count(0), 
+        idx(0),
+        current(0),
+        average(0) {}
+
     ~RunningAverage() {}
 
     void AddSample(T sample) {
@@ -34,6 +40,8 @@ public:
     T GetCurrent() { return current; }
     //T GetMaximum() { return maximum; }
     //T GetMinimum() { return minimum; }
+
+    int GetSampleCount() { return count; }
 
 private:
     int             max_samples;

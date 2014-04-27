@@ -5,11 +5,13 @@
 #include <SFML\Graphics.hpp>
 #include <SFML\OpenGL.hpp>
 
-#include <kinect\nui\Kinect.h>
-#include <kinect\nui\ImageFrame.h>
+#include <OpenNI.h>
 
-#include "FaceTracker.h"
-#include "HeadTracker.h"
+//#include <kinect\nui\Kinect.h>
+//#include <kinect\nui\ImageFrame.h>
+
+//#include "FaceTracker.h"
+//#include "HeadTracker.h"
 
 #include "utils\FPSCounter.h"
 #include "utils\RunningAverage.h"
@@ -32,21 +34,31 @@ public:
     std::vector<std::wstring> args;
     sf::RenderWindow *window = nullptr;
 
-    kinect::nui::Kinect *kinect = nullptr;
-    kinect::nui::ImageStream *videoStream;
-    kinect::nui::ImageStream *depthStream;
-
-    FaceTracker* faceTracker = nullptr;
-    HeadTracker* headTracker = nullptr;
-
     Application(int argc, _TCHAR* argv[]);
     ~Application();
 
     int Main();
 
 protected:
-    void Initialize();
+    void InitializeResources();
+    void InitializeOpenNI();
+    void InitializeWindow();
+
+    void Capture();
+    void Process();
     void Draw();
+
+    // OpenNI device members
+    openni::Device device;
+    openni::VideoStream colorStream;
+    openni::VideoStream depthStream;
+    openni::VideoFrameRef colorFrame;
+    openni::VideoFrameRef depthFrame;
+
+    // Captured image frames
+    cv::Mat colorImage;     // 8UC3 (RGB)
+    cv::Mat depthImage;     // 32F, not normalized
+    cv::Mat depthRaw;       // 16U
 
 private:
     FPSCounter fpsCounter;
@@ -60,18 +72,16 @@ private:
     sf::Texture wolf_tex;
 
     sf::Texture depthTexture;
-    sf::Texture rgbTexture;
-
-    cv::Mat rgbImage;
-    cv::Mat depthImage;
-    cv::Mat depthRaw;
+    sf::Texture colorTexture;
 
 
-    void Capture();
+    
     //void SegmentBackground();
     void TrackFace();
 
     std::string GetTrackingStatus();
+
+    openni::VideoStream* oniStreams[2];
 
 
 };
