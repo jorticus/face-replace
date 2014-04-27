@@ -28,7 +28,7 @@ class Application
     //const std::string default_font_file = "data\\TitilliumWeb-Bold.ttf";
     const std::string default_font_file = "data\\Exo-Bold.ttf";
 
-    const int depth_threshold = 2000; //mm
+    const int depth_threshold = 2400; //mm
 
 public:
     std::vector<std::wstring> args;
@@ -59,6 +59,11 @@ protected:
     cv::Mat colorImage;     // 8UC3 (RGB)
     cv::Mat depthImage;     // 32F, not normalized
     cv::Mat depthRaw;       // 16U
+    //cv::Mat depthMask;      // Binary mask, marking valid/invalid depth pixels
+
+    bool newFrame;
+    bool colorReady;
+    bool depthReady;
 
 private:
     FPSCounter fpsCounter;

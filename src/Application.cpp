@@ -20,6 +20,8 @@ Application::Application(int argc, _TCHAR* argv[]) :
     // Convert command-line arguments to std::vector
     for (int i = 0; i < argc; i++)
         this->args.push_back(wstring(argv[i]));
+
+    newFrame = false;
 }
 
 
@@ -123,6 +125,8 @@ void Application::InitializeOpenNI() {
 
     if (!depthStream.isValid() || !colorStream.isValid())
         throw runtime_error("No valid streams");
+
+    device.setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
 }
 
 void Application::InitializeWindow() {
@@ -163,11 +167,13 @@ void Application::Capture() {
     if (rc != openni::STATUS_OK)
         throw runtime_error("Could not read depth sensor");
 
-    switch (changedIndex) {
+    /*switch (changedIndex) {
     case 0: {
                 rc = colorStream.readFrame(&colorFrame);
                 if (rc != openni::STATUS_OK || !colorFrame.isValid())
                     throw runtime_error("Error reading color stream");
+                newFrame = true;
+                colorReady = true;
 
                 // Color frames are in RGB888 pixel format (ie. 24 bits per pixel)
                 colorImage = cv::Mat(colorFrame.getHeight(), colorFrame.getWidth(), CV_8UC3, (void*)colorFrame.getData());
@@ -177,6 +183,8 @@ void Application::Capture() {
                 rc = depthStream.readFrame(&depthFrame);
                 if (rc != openni::STATUS_OK || !depthFrame.isValid())
                     throw runtime_error("Error reading depth stream");
+                newFrame = true;
+                depthReady = true;
 
                 // Depth frames are raw, 16 bits per pixel
                 depthRaw = cv::Mat(depthFrame.getHeight(), depthFrame.getWidth(), CV_16U, (void*)depthFrame.getData());
@@ -185,7 +193,37 @@ void Application::Capture() {
     }
     default:
         throw runtime_error("Invalid stream index");
-    }
+    }*/
+
+    //TODO: Using the above code causes lag in the color video stream for some reason.
+
+    rc = colorStream.readFrame(&colorFrame);
+    if (rc != openni::STATUS_OK || !colorFrame.isValid())
+        throw runtime_error("Error reading color stream");
+    newFrame = true;
+    colorReady = true;
+
+    // Color frames are in RGB888 pixel format (ie. 24 bits per pixel)
+    colorImage = cv::Mat(colorFrame.getHeight(), colorFrame.getWidth(), CV_8UC3, (void*)colorFrame.getData());
+    
+    rc = depthStream.readFrame(&depthFrame);
+    if (rc != openni::STATUS_OK || !depthFrame.isValid())
+        throw runtime_error("Error reading depth stream");
+    newFrame = true;
+    depthReady = true;
+
+    // Depth frames are raw, 16 bits per pixel
+    depthRaw = cv::Mat(depthFrame.getHeight(), depthFrame.getWidth(), CV_16U, (void*)depthFrame.getData());
+    depthRaw.convertTo(depthImage, CV_32F);  // Most OpenCV functions only support 8U or 32F
+}
+
+void cvApplyAlpha(cv::Mat rgb_in, cv::Mat alpha_in, cv::Mat &rgba_out) {
+    cv::cvtColor(rgb_in, rgba_out, cv::COLOR_RGB2RGBA);
+
+    int from_to[] = { 0,0, 1,1, 2,2, 3,3 };
+    cv::Mat in[] = { rgb_in, alpha_in };
+    cv::Mat out[] = { rgba_out };
+    cv::mixChannels(in, 2, out, 1, from_to, 4);
 }
 
 void Application::Process() {
@@ -193,15 +231,23 @@ void Application::Process() {
     if (colorFrame.isValid() && depthFrame.isValid()) {
 
         // Segment background
-        /*for (int row = 0; row < depthImage.rows; row++) {
-            uint16_t* p = reinterpret_cast<uint16_t*>(depthImage.ptr(row));
-            for (int x = 0; x < depthImage.cols; x++) {
-            *p = (*p < this->depth_threshold) ? *p : this->depth_threshold;
-            p++;
-            }
-            }*/
+        cv::Mat mask_segment;
+        cv::Mat mask_valid;
+        cv::threshold(depthImage, mask_segment, this->depth_threshold, 255.0, cv::THRESH_BINARY_INV);
+        cv::threshold(depthImage, mask_valid, 1, 255.0, cv::THRESH_BINARY);
 
-        cv::threshold(depthImage, depthImage, 2000.0, 0.0, cv::THRESH_TOZERO_INV);
+        cv::Mat depth_mask;
+        cv::bitwise_and(mask_segment, mask_valid, depth_mask);
+        depth_mask.convertTo(depth_mask, CV_8U);
+
+        cv::Mat kernel(3, 3, CV_8U, cv::Scalar(1));
+        cv::morphologyEx(depth_mask, depth_mask, cv::MORPH_OPEN, kernel);
+
+        
+        //cv::bitwise_and(depthImage, depthImage, depthImage, depth_mask);
+
+        cv::threshold(depthImage, depthImage, this->depth_threshold, 0.0, cv::THRESH_TOZERO_INV);
+
 
 
         //cv::InputArray kernel(new int[] = { 1, 2 });
@@ -218,7 +264,7 @@ void Application::Process() {
 
         cv::normalize(depthImageDisplay, depthImageDisplay, 0.0, 255.0, cv::NORM_MINMAX, CV_8U);
 
-        depthImageDisplay = 255 - depthImageDisplay;
+        //depthImageDisplay = 255 - depthImageDisplay;
 
         // Create a mask for depth pixels with an invalid value
         //cv::Mat depthErrorMask;
@@ -232,14 +278,20 @@ void Application::Process() {
         //cv::bitwise_and(depthImageDisplay, ~depthErrorMask, depthImageDisplay);
 
         // Convert images to OpenGL textures
-        cv::cvtColor(colorImage, colorImage, cv::COLOR_RGB2BGRA); // OpenGL texture must be in BGRA format
-        colorTexture.create(colorImage.cols, colorImage.rows);
-        colorTexture.update(colorImage.data, colorImage.cols, colorImage.rows, 0, 0);
+        cv::Mat image1;
+        cv::cvtColor(colorImage, image1, cv::COLOR_BGR2BGRA); // OpenGL texture must be in BGRA format
+        cvApplyAlpha(colorImage, depth_mask, image1);
 
+        colorTexture.create(image1.cols, image1.rows);
+        colorTexture.update(image1.data, image1.cols, image1.rows, 0, 0);
+
+        cv::Mat image2;
         //cv::cvtColor(depthImageDisplay, depthImageDisplay, cv::COLOR_GRAY2BGRA);
-        cv::cvtColor(depthImageDisplay, depthImageDisplay, cv::COLOR_RGB2BGRA);
-        depthTexture.create(depthImageDisplay.cols, depthImageDisplay.rows);
-        depthTexture.update(depthImageDisplay.data, depthImageDisplay.cols, depthImageDisplay.rows, 0, 0);
+        cv::cvtColor(depthImageDisplay, image2, cv::COLOR_BGR2BGRA);
+        cvApplyAlpha(depthImageDisplay, depth_mask, image2);
+
+        depthTexture.create(image2.cols, image2.rows);
+        depthTexture.update(image2.data, image2.cols, image2.rows, 0, 0);
 
     }
 }
@@ -253,11 +305,20 @@ void Application::TrackFace() {
 void Application::Draw() {
     float raw_depth = NAN;
 
-    Capture();
-    Process();
+    window->clear(Color::White);
 
-    // Draw rgb and depth textures to the window
-    if (colorFrame.isValid() && depthFrame.isValid()) {
+    depthReady = false;
+    colorReady = false;
+
+    //while (/*!depthReady && */!colorReady)
+        Capture();
+
+    if (newFrame) {
+        newFrame = false;
+
+        Process();
+
+        // Draw rgb and depth textures to the window
         Vector2f rgbLocation(0, 0);
         Vector2f depthLocation(colorImage.cols, (colorImage.rows - depthImage.rows) / 2);
 
