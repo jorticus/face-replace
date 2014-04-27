@@ -6,6 +6,8 @@
 #include <FaceTrackLib.h> // Part of the Microsoft Kinect Developer Toolkit
 #include "FaceTrackerBase.h"
 
+#include <SFML\Graphics.hpp>
+
 class ft_error : public std::runtime_error
 {
 public:
@@ -28,6 +30,11 @@ public:
     void Track(cv::Mat &colorImage, cv::Mat &depthImage);
     HRESULT GetTrackStatus() { return (pFTResult != nullptr) ? pFTResult->GetStatus() : -1; }
 
+    // Read-only!!
+    bool            isTracked;
+    bool            hasFace;
+    RECT            faceRect;
+
 private:
     IFTFaceTracker* pFaceTracker = NULL;
     
@@ -37,7 +44,7 @@ private:
     IFTImage*       pDepthImage = NULL;
     FT_SENSOR_DATA  sensorData;
 
-    bool            isTracked;
+    
     HRESULT         last_exc = S_OK;
 
     void            printTrackingState(std::string message, HRESULT hr);

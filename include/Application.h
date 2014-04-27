@@ -9,7 +9,10 @@
 #include <kinect\nui\ImageFrame.h>
 
 #include "FaceTracker.h"
+#include "HeadTracker.h"
+
 #include "utils\FPSCounter.h"
+#include "utils\RunningAverage.h"
 
 
 class Application
@@ -23,6 +26,8 @@ class Application
     //const std::string default_font_file = "data\\TitilliumWeb-Bold.ttf";
     const std::string default_font_file = "data\\Exo-Bold.ttf";
 
+    const int depth_threshold = 2000; //mm
+
 public:
     std::vector<std::wstring> args;
     sf::RenderWindow *window = nullptr;
@@ -32,6 +37,7 @@ public:
     kinect::nui::ImageStream *depthStream;
 
     FaceTracker* faceTracker = nullptr;
+    HeadTracker* headTracker = nullptr;
 
     Application(int argc, _TCHAR* argv[]);
     ~Application();
@@ -44,6 +50,9 @@ protected:
 
 private:
     FPSCounter fpsCounter;
+    RunningAverage<unsigned int> trackReliability;
+
+    sf::Shader outlineShader;
 
     sf::Font fps_font;
     sf::Font font;
@@ -55,13 +64,15 @@ private:
 
     cv::Mat rgbImage;
     cv::Mat depthImage;
+    cv::Mat depthRaw;
+
 
     void Capture();
+    //void SegmentBackground();
     void TrackFace();
 
     std::string GetTrackingStatus();
 
-    sf::Shader outlineShader;
-    
+
 };
 

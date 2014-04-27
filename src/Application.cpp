@@ -13,7 +13,8 @@ using namespace std;
 using namespace sf;
 
 Application::Application(int argc, _TCHAR* argv[]) :
-    fpsCounter(32)
+    fpsCounter(32),
+    trackReliability(128)
 {
     // Convert command-line arguments to std::vector
     for (int i = 0; i < argc; i++)
@@ -23,6 +24,9 @@ Application::Application(int argc, _TCHAR* argv[]) :
 
 Application::~Application()
 {
+    if (this->headTracker != nullptr)
+        delete this->headTracker;
+
     if (this->faceTracker != nullptr)
         delete this->faceTracker;
 
@@ -98,6 +102,8 @@ void Application::Initialize() {
 
     faceTracker = new FaceTracker();
 
+    headTracker = new HeadTracker();
+
 
     cout << "Loading resources" << endl;
 
@@ -159,11 +165,29 @@ void Application::Capture() {
         cv::cvtColor(rgbImage, rgbImage, cv::COLOR_RGBA2RGB); // The 4th byte is just padding, so discard it
         vector<cv::Mat> depthOut(2);
         cv::split(depthData, depthOut);     // Split the depth and player index
-        depthImage = depthOut[1];
+        depthRaw = depthOut[1];
+        depthRaw.convertTo(depthImage, CV_32F);
 
 
+        // Segment background
+        /*for (int row = 0; row < depthImage.rows; row++) {
+            uint16_t* p = reinterpret_cast<uint16_t*>(depthImage.ptr(row));
+            for (int x = 0; x < depthImage.cols; x++) {
+                *p = (*p < this->depth_threshold) ? *p : this->depth_threshold;
+                p++;
+            }
+        }*/
+
+        cv::threshold(depthImage, depthImage, 2000.0, 0.0, cv::THRESH_TOZERO_INV);
 
 
+        //cv::InputArray kernel(new int[] = { 1, 2 });
+        //cv::dilate(depthImage, depthImage, kernel);
+        //cv::GaussianBlur(depthImage, depthImage, cv::Size(15, 15), 0, 0);
+
+        //cv::Sobel(depthImage, depthImage, CV_32F, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT);
+        
+        
 
         // Display
 
@@ -199,33 +223,116 @@ void Application::Capture() {
 void Application::TrackFace() {
    faceTracker->Track(rgbImage, depthImage);
 
+   trackReliability.AddSample(faceTracker->isTracked);
 }
 
 void Application::Draw() {
 
     Capture();
 
-    TrackFace();
-
     // Draw rgb and depth textures to the window
+    Vector2f rgbLocation(0, 0);
+    Vector2f depthLocation(rgbImage.cols, (rgbImage.rows - depthImage.rows) / 2);
+
     Sprite rgbSprite(rgbTexture);
     Sprite depthSprite(depthTexture);
 
-    depthSprite.move(rgbImage.cols, (rgbImage.rows - depthImage.rows) / 2);
+    rgbSprite.move(rgbLocation);
+    depthSprite.move(depthLocation);
 
     window->draw(rgbSprite);
     window->draw(depthSprite);
 
-    string fps = (boost::format("%.1f FPS") % fpsCounter.GetAverageFps()).str();
-    string status = GetTrackingStatus();
+
+
+
+
+    //TrackFace();
+
+    //cv::MSER mser();
+    cv::SimpleBlobDetector::Params params;
+    params.minThreshold = 40;
+    params.maxThreshold = 60;
+    params.thresholdStep = 5;
+    params.minArea = 100;
+    params.minConvexity = 0.3;
+    params.minInertiaRatio = 0.01;
+
+    params.maxArea = 8000;
+    params.maxConvexity = 10;
+
+    params.filterByColor = false;
+    params.filterByCircularity = false;
+
+    cv::Mat img;
+    cv::normalize(depthImage, img, 0.0, 255.0, cv::NORM_MINMAX, CV_8U);
+    //depthImage.convertTo(img, CV_8U);
+
+
+    cv::SimpleBlobDetector detector(params);
+    detector.create("SimpleBlob");
+
+    std::vector<cv::KeyPoint> keypoints;
+    detector.detect(img, keypoints);
+
+    /*for (int i = 0; i < keypoints.size(); i++) {
+        auto keypoint = keypoints[i];
+        CircleShape dot(keypoint.size, 6);
+
+        dot.setFillColor(Color::Green);
+        dot.move(keypoint.pt.x + depthLocation.x, keypoint.pt.y + depthLocation.y);
+
+
+        
+        window->draw(dot);
+    }*/
+
+
+
+    // Draw face bounds
+    RECT rect = faceTracker->faceRect;
+    RectangleShape face_bounds(Vector2f(rect.right - rect.left, rect.bottom - rect.top));
+    face_bounds.move(rect.left, rect.top);
+    face_bounds.setFillColor(Color::Transparent);
+    face_bounds.setOutlineColor((faceTracker->isTracked) ? Color::Red : Color(255, 0, 0, 40));
+    face_bounds.setOutlineThickness(2.5f);
+
+    window->draw(face_bounds);
+
+
+    // Draw face center
+    Vector2f face_center(rect.left + (rect.right - rect.left) / 2.0f, rect.top + (rect.bottom - rect.top) / 2.0f);
+
+    CircleShape dot(3, 8);
+    dot.setFillColor(Color::Red);
+    dot.move(face_center);
+
+    window->draw(dot);
+
+
+    // Calculate distance at face center
+    uint16_t raw_depth = depthRaw.at<uint16_t>(cv::Point(static_cast<int>(face_center.x), static_cast<int>(face_center.y)));
+
+
 
     // Draw status text
-    Text text_status(status, font, 16);
-    Text text_fps(fps, font, 16);
+    Text text_status(GetTrackingStatus(), font, 16);
+    Text text_fps((boost::format("%.1f FPS") % fpsCounter.GetAverageFps()).str(), font, 16);
+    Text text_track((boost::format("Reliability %.2f%%") % (trackReliability.GetAverage() * 100.0f)).str(), font, 16);
+    Text text_dist((boost::format("Distance %.1fmm") % raw_depth).str(), font, 16);
+    //TODO: Distance from head, for quantifying my results
 
     text_fps.move(8, 0);
     text_fps.setColor(Color::White);
     window->draw(text_fps, &outlineShader);
+
+    text_track.move(100, 0);
+    text_track.setColor(Color::White);
+    window->draw(text_track, &outlineShader);
+
+    text_dist.move(270, 0);
+    text_dist.setColor(Color::White);
+    window->draw(text_dist, &outlineShader);
 
     text_status.move(8, 20);
     text_status.setColor(Color::White);

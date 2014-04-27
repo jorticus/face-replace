@@ -3,6 +3,8 @@
 #include "FaceTracker.h"
 #include <comdef.h>
 
+#include <SFML\System.hpp>
+
 using namespace std;
 
 ft_error::ft_error(string message, HRESULT hr) : runtime_error(NULL)
@@ -23,7 +25,7 @@ ft_error::ft_error(string message, HRESULT hr) : runtime_error(NULL)
         error_message = "Tracking failed due to errors in tracking individual face parts";
         break;
     case FT_ERROR_NN_FAILED:
-        error_message = "Tracking failed due to inability of the Neural Network to find nose, mouth corners, and eyes";
+        error_message = "Tracking failed due to Neural Network failure";  //inability of the Neural Network to find nose, mouth corners, and eyes
         break;
     case FT_ERROR_UNINITIALIZED:
         error_message = "Face tracker is not initialized";
@@ -41,7 +43,7 @@ ft_error::ft_error(string message, HRESULT hr) : runtime_error(NULL)
         error_message = "The 3D hint vectors contain invalid values (could be out of range)";
         break;
     case FT_ERROR_HEAD_SEARCH_FAILED:
-        error_message = "Cannot find the head area based on the 3D hint vectors or region of interest rectangle";
+        error_message = "Cannot find the head area based on the 3D hint vectors";
         break;
     case FT_ERROR_USER_LOST:
         error_message = "The user being tracked has been lost";
@@ -66,6 +68,9 @@ ft_error::ft_error(string message, HRESULT hr) : runtime_error(NULL)
 FaceTracker::FaceTracker()
 {
     isTracked = false;
+    hasFace = false;
+
+    faceRect = { 0, 0, 0, 0 };
 
     HRESULT hr;
     FT_CAMERA_CONFIG videoConfig = { 640, 480, 1.0 };   // TODO: Don't hard-code these values
@@ -116,12 +121,15 @@ void FaceTracker::Track(cv::Mat &colorImage, cv::Mat &depthImage)
 
     if (!isTracked) {
         // Initiate face tracking
-        hr = pFaceTracker->StartTracking(&sd, NULL, NULL, pFTResult);
+        hr = pFaceTracker->StartTracking(&sd, (hasFace) ? &faceRect : NULL, NULL, pFTResult);
         if (SUCCEEDED(hr) && (SUCCEEDED(hr = pFTResult->GetStatus()))) {
             isTracked = true;
             cout << "Initial track found" << endl;
         }
         else {
+            if (hr == FT_ERROR_HEAD_SEARCH_FAILED)
+                hasFace = false;
+
             isTracked = false;
         }
         printTrackingState("StartTracking: ", hr);
@@ -134,13 +142,27 @@ void FaceTracker::Track(cv::Mat &colorImage, cv::Mat &depthImage)
             isTracked = true;
         }
         else {
-            isTracked = false;
+            if (hr == E_UNEXPECTED)
+                isTracked = false;
+            //isTracked = false;
+            //pFTResult->Reset();
         }
-        //printTrackingState("ContinueTracking: ", hr);
+        printTrackingState("ContinueTracking: ", hr);
     }
 
     // Do something with the result
-    
+    if (isTracked) {
+        pFTResult->GetFaceRect(&this->faceRect);
+        this->hasFace = true;
+
+        float scale;
+        float rotation[3];
+        float translation[3];
+
+        pFTResult->Get3DPose(&scale, rotation, translation);
+        
+        pFTResult->GetStatus();
+    }
 }
 
 void FaceTracker::printTrackingState(string message, HRESULT hr) {
@@ -153,8 +175,7 @@ void FaceTracker::printTrackingState(string message, HRESULT hr) {
     last_exc = hr;
 }
 
-FaceTracker::~FaceTracker()
-{
+FaceTracker::~FaceTracker() {
     if (pFaceTracker != nullptr)
         pFaceTracker->Release();
 
