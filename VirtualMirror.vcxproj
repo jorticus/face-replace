@@ -45,6 +45,7 @@
     <Import Project="F:\Cpp\SFML\SFML.Win32.Release.props" />
     <Import Project="F:\Cpp\opencv\OpenCV.300.Win32.Release.props" />
     <Import Project="F:\Cpp\OpenNI2\OpenNI2.Win32.props" />
+    <Import Project="F:\Cpp\boost\Boost.Win32.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

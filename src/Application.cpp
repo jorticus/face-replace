@@ -58,8 +58,7 @@ int Application::Main()
                 break;
 
             case Event::KeyPressed:
-                if (event.key.code == Keyboard::Escape)
-                    window->close();
+                OnKeyPress(event);
                 break;
             }
         }
@@ -78,6 +77,35 @@ int Application::Main()
     return 0;
 }
 
+
+void Application::OnKeyPress(sf::Event e) {
+    switch (e.key.code) {
+    case Keyboard::Escape:
+        window->close();
+        break;
+
+    case Keyboard::F12:
+        // Save current color/depth streams to disk
+        cv::Mat colorTemp;
+        cv::cvtColor(colorImage, colorTemp, cv::COLOR_BGR2RGB);
+        cv::imwrite("cap\\color.png", colorTemp);
+
+        cv::Mat depthTemp;
+        cv::normalize(depthImage, depthTemp, 0.0, 255.0, cv::NORM_MINMAX, CV_8U);
+        cv::applyColorMap(depthTemp, depthTemp, cv::COLORMAP_JET);
+        cv::imwrite("cap\\depthraw.png", depthRaw);
+        cv::imwrite("cap\\depth.png", depthTemp);
+
+        // Capture screenshot of window
+        sf::Image screenshot = window->capture();
+        screenshot.saveToFile("cap\\screenshot.png");
+    }
+}
+
+
+void Application::Screenshot(cv::Mat out) {
+
+}
 
 void Application::InitializeResources() {
     cout << "Loading resources" << endl;
@@ -272,7 +300,7 @@ void Application::Process() {
 
         //cv::medianBlur(depthImage, depthImage, 13);
 
-        // Map depth to JET color map, and mask any invalid pixels to 0
+        // Map depth to JET color ma6p, and mask any invalid pixels to 0
         cv::applyColorMap(depthImageDisplay, depthImageDisplay, cv::COLORMAP_JET);
         //cv::cvtColor(depthErrorMask, depthErrorMask, cv::COLOR_GRAY2RGB);
         //cv::bitwise_and(depthImageDisplay, ~depthErrorMask, depthImageDisplay);
@@ -284,10 +312,10 @@ void Application::Process() {
 
         colorTexture.create(image1.cols, image1.rows);
         colorTexture.update(image1.data, image1.cols, image1.rows, 0, 0);
-
+        
         cv::Mat image2;
         //cv::cvtColor(depthImageDisplay, depthImageDisplay, cv::COLOR_GRAY2BGRA);
-        cv::cvtColor(depthImageDisplay, image2, cv::COLOR_BGR2BGRA);
+        cv::cvtColor(depthImageDisplay, depthImageDisplay, cv::COLOR_RGB2BGRA);
         cvApplyAlpha(depthImageDisplay, depth_mask, image2);
 
         depthTexture.create(image2.cols, image2.rows);

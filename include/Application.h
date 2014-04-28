@@ -48,6 +48,8 @@ protected:
     void Process();
     void Draw();
 
+    void OnKeyPress(sf::Event e);
+
     // OpenNI device members
     openni::Device device;
     openni::VideoStream colorStream;
