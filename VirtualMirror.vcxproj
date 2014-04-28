@@ -89,6 +89,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\Capture.h" />
     <ClInclude Include="include\HeadTracker.h" />
     <ClInclude Include="include\utils\FPSCounter.h" />
     <ClInclude Include="include\Application.h" />
@@ -99,8 +100,10 @@
     <ClInclude Include="include\win32\Event.h" />
     <ClInclude Include="include\win32\SpinLock.h" />
     <ClInclude Include="include\utils\RunningAverage.h" />
+    <ClInclude Include="include\utils\Runnable.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Capture.cpp" />
     <ClCompile Include="src\HeadTracker.cpp" />
     <ClCompile Include="src\utils\FPSCounter.cpp" />
     <ClCompile Include="src\Application.cpp" />

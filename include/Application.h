@@ -7,6 +7,9 @@
 
 #include <OpenNI.h>
 
+#include <atomic>
+#include <thread>
+
 //#include <kinect\nui\Kinect.h>
 //#include <kinect\nui\ImageFrame.h>
 
@@ -15,6 +18,8 @@
 
 #include "utils\FPSCounter.h"
 #include "utils\RunningAverage.h"
+
+#include "Capture.h"
 
 
 class Application
@@ -41,31 +46,24 @@ public:
 
 protected:
     void InitializeResources();
-    void InitializeOpenNI();
     void InitializeWindow();
 
-    void Capture();
+    //void Capture();
     void Process();
     void Draw();
 
     void OnKeyPress(sf::Event e);
 
-    // OpenNI device members
-    openni::Device device;
-    openni::VideoStream colorStream;
-    openni::VideoStream depthStream;
-    openni::VideoFrameRef colorFrame;
-    openni::VideoFrameRef depthFrame;
-
     // Captured image frames
     cv::Mat colorImage;     // 8UC3 (RGB)
     cv::Mat depthImage;     // 32F, not normalized
     cv::Mat depthRaw;       // 16U
-    //cv::Mat depthMask;      // Binary mask, marking valid/invalid depth pixels
 
     bool newFrame;
     bool colorReady;
     bool depthReady;
+
+    Capture capture;
 
 private:
     FPSCounter fpsCounter;
@@ -89,7 +87,6 @@ private:
     std::string GetTrackingStatus();
 
     openni::VideoStream* oniStreams[2];
-
 
 };
 

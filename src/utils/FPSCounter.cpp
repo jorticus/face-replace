@@ -5,11 +5,12 @@ FPSCounter::~FPSCounter() {
 }
 
 void FPSCounter::BeginPeriod() {
-    clock.restart();
+    //clock.restart();
 }
 
 void FPSCounter::EndPeriod() {
     AddSample(clock.getElapsedTime().asSeconds());
+    clock.restart();
 }
 
 float FPSCounter::GetAverageFps() {

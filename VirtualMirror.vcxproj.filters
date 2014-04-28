@@ -51,6 +51,12 @@
     <ClInclude Include="include\HeadTracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\Capture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utils\Runnable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp">
@@ -69,6 +75,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\HeadTracker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Capture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
