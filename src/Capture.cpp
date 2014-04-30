@@ -52,7 +52,7 @@ void Capture::Initialize() {
     if (!depthStream.isValid() || !colorStream.isValid())
         throw runtime_error("No valid streams");
 
-    device.setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
+    //device.setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
 }
 
 void Capture::Process() {

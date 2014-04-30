@@ -39,6 +39,8 @@
     <Import Project="F:\Cpp\opencv\OpenCV.300.Win32.Debug.props" />
     <Import Project="F:\Cpp\boost\Boost.Win32.props" />
     <Import Project="F:\Cpp\OpenNI2\OpenNI2.Win32.props" />
+    <Import Project="F:\Cpp\KinectSDK\Microsoft Kinect SDK.props" />
+    <Import Project="F:\Cpp\KinectDTK\Microsoft Kinect DTK.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -46,6 +48,8 @@
     <Import Project="F:\Cpp\opencv\OpenCV.300.Win32.Release.props" />
     <Import Project="F:\Cpp\OpenNI2\OpenNI2.Win32.props" />
     <Import Project="F:\Cpp\boost\Boost.Win32.props" />
+    <Import Project="F:\Cpp\KinectSDK\Microsoft Kinect SDK.props" />
+    <Import Project="F:\Cpp\KinectDTK\Microsoft Kinect DTK.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -90,10 +94,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\Capture.h" />
-    <ClInclude Include="include\HeadTracker.h" />
+    <ClInclude Include="include\FaceTracker.h" />
     <ClInclude Include="include\utils\FPSCounter.h" />
     <ClInclude Include="include\Application.h" />
-    <ClInclude Include="include\FaceTrackerBase.h" />
     <ClInclude Include="include\resource.h" />
     <ClInclude Include="include\stdafx.h" />
     <ClInclude Include="include\targetver.h" />
@@ -104,7 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Capture.cpp" />
-    <ClCompile Include="src\HeadTracker.cpp" />
+    <ClCompile Include="src\FaceTracker.cpp" />
     <ClCompile Include="src\utils\FPSCounter.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\main.cpp" />

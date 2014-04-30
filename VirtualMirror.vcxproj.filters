@@ -39,22 +39,19 @@
     <ClInclude Include="include\win32\SpinLock.h">
       <Filter>Header Files\KinectWrapper</Filter>
     </ClInclude>
-    <ClInclude Include="include\FaceTrackerBase.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\utils\FPSCounter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\utils\RunningAverage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\HeadTracker.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\Capture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\utils\Runnable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FaceTracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -74,10 +71,10 @@
     <ClCompile Include="src\utils\FPSCounter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\HeadTracker.cpp">
+    <ClCompile Include="src\Capture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Capture.cpp">
+    <ClCompile Include="src\FaceTracker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

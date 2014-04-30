@@ -3,7 +3,7 @@
 #include <opencv2\opencv.hpp>
 
 #include <Windows.h>
-//#include <FaceTrackLib.h> // Part of the Microsoft Kinect Developer Toolkit
+#include <FaceTrackLib.h> // Part of the Microsoft Kinect Developer Toolkit
 #include "FaceTrackerBase.h"
 
 #include <SFML\Graphics.hpp>
@@ -27,13 +27,17 @@ public:
     FaceTracker();
     ~FaceTracker();
 
-    void Track(cv::Mat &colorImage, cv::Mat &depthImage);
+    void Track(cv::Mat colorImage, cv::Mat depthImage);
     HRESULT GetTrackStatus() { return (pFTResult != nullptr) ? pFTResult->GetStatus() : -1; }
 
     // Read-only!!
     bool            isTracked;
     bool            hasFace;
     RECT            faceRect;
+
+    float           scale;
+    sf::Vector3f    rotation;
+    sf::Vector3f    translation;
 
 private:
     IFTFaceTracker* pFaceTracker = NULL;

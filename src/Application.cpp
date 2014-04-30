@@ -30,14 +30,22 @@ Application::~Application()
     if (this->window != nullptr)
         delete this->window;
 
+    if (faceTracker != nullptr)
+        delete faceTracker;
+
     capture.Stop();
 }
 
 int Application::Main()
 {
     InitializeResources();
+
     capture.Initialize();
+    
+    faceTracker = new FaceTracker();
+    
     InitializeWindow();
+    
 
     colorImage = cv::Mat(480, 640, CV_8UC3);
     depthImage = cv::Mat(480, 640, CV_32F);
@@ -146,69 +154,6 @@ void Application::InitializeWindow() {
     cout << "Started" << endl;
 }
 
-/*void Application::Capture() {
-
-    //if (!depthStream.isValid() || !colorStream.isValid())
-    //    throw runtime_error("Error reading depth/color stream");
-
-    int changedIndex;
-    auto streams = new VideoStream*[2] {&colorStream, &depthStream};
-    //auto frames = new VideoFrameRef[2];
-
-    openni::Status rc = OpenNI::waitForAnyStream(streams, 2, &changedIndex);
-    if (rc != openni::STATUS_OK)
-        throw runtime_error("Could not read depth sensor");
-
-    /*switch (changedIndex) {
-    case 0: {
-                rc = colorStream.readFrame(&colorFrame);
-                if (rc != openni::STATUS_OK || !colorFrame.isValid())
-                    throw runtime_error("Error reading color stream");
-                newFrame = true;
-                colorReady = true;
-
-                // Color frames are in RGB888 pixel format (ie. 24 bits per pixel)
-                colorImage = cv::Mat(colorFrame.getHeight(), colorFrame.getWidth(), CV_8UC3, (void*)colorFrame.getData());
-                break;
-    }
-    case 1: {
-                rc = depthStream.readFrame(&depthFrame);
-                if (rc != openni::STATUS_OK || !depthFrame.isValid())
-                    throw runtime_error("Error reading depth stream");
-                newFrame = true;
-                depthReady = true;
-
-                // Depth frames are raw, 16 bits per pixel
-                depthRaw = cv::Mat(depthFrame.getHeight(), depthFrame.getWidth(), CV_16U, (void*)depthFrame.getData());
-                depthRaw.convertTo(depthImage, CV_32F);  // Most OpenCV functions only support 8U or 32F
-                break;
-    }
-    default:
-        throw runtime_error("Invalid stream index");
-    }*/
-
-   /* //TODO: Using the above code causes lag in the color video stream for some reason. 
-
-    rc = colorStream.readFrame(&colorFrame);
-    if (rc != openni::STATUS_OK || !colorFrame.isValid())
-        throw runtime_error("Error reading color stream");
-    newFrame = true;
-    colorReady = true;
-
-    // Color frames are in RGB888 pixel format (ie. 24 bits per pixel)
-    colorImage = cv::Mat(colorFrame.getHeight(), colorFrame.getWidth(), CV_8UC3, (void*)colorFrame.getData());
-    
-    rc = depthStream.readFrame(&depthFrame);
-    if (rc != openni::STATUS_OK || !depthFrame.isValid())
-        throw runtime_error("Error reading depth stream");
-    newFrame = true;
-    depthReady = true;
-
-    // Depth frames are raw, 16 bits per pixel
-    depthRaw = cv::Mat(depthFrame.getHeight(), depthFrame.getWidth(), CV_16U, (void*)depthFrame.getData());
-    depthRaw.convertTo(depthImage, CV_32F);  // Most OpenCV functions only support 8U or 32F
-}*/
-
 void cvApplyAlpha(cv::Mat rgb_in, cv::Mat alpha_in, cv::Mat &rgba_out) {
     cv::cvtColor(rgb_in, rgba_out, cv::COLOR_RGB2RGBA);
 
@@ -219,6 +164,8 @@ void cvApplyAlpha(cv::Mat rgb_in, cv::Mat alpha_in, cv::Mat &rgba_out) {
 }
 
 void Application::Process() {
+
+    bool removeBackground = false;
 
 
     // Segment background
@@ -235,12 +182,6 @@ void Application::Process() {
     cv::morphologyEx(depth_mask, depth_mask, cv::MORPH_OPEN, kernel);
 
 
-    //cv::bitwise_and(depthImage, depthImage, depthImage, depth_mask);
-
-    cv::threshold(depthImage, depthImage, this->depth_threshold, 0.0, cv::THRESH_TOZERO_INV);
-
-
-
     //cv::InputArray kernel(new int[] = { 1, 2 });
     //cv::dilate(depthImage, depthImage, kernel);
     //cv::GaussianBlur(depthImage, depthImage, cv::Size(15, 15), 0, 0);
@@ -248,12 +189,17 @@ void Application::Process() {
     //cv::Sobel(depthImage, depthImage, CV_32F, 1, 0, 3, 1, 0, cv::BORDER_DEFAULT);
 
 
-
     // Display
 
     cv::Mat depthImageDisplay = depthImage;
 
     cv::normalize(depthImageDisplay, depthImageDisplay, 0.0, 255.0, cv::NORM_MINMAX, CV_8U);
+
+    //if (removeBackground)
+        //cv::bitwise_and(depthImageDisplay, depthImageDisplay, depthImageDisplay);
+        //cv::threshold(depthImageDisplay, depthImageDisplay, this->depth_threshold, 0.0, cv::THRESH_TOZERO_INV);
+
+    //cv::normalize(depthImageDisplay, depthImageDisplay, 0.0, 255.0, cv::NORM_MINMAX, CV_8U);
 
     //depthImageDisplay = 255 - depthImageDisplay;
 
@@ -271,15 +217,19 @@ void Application::Process() {
     // Convert images to OpenGL textures
     cv::Mat image1;
     cv::cvtColor(colorImage, image1, cv::COLOR_BGR2BGRA); // OpenGL texture must be in BGRA format
-    cvApplyAlpha(colorImage, depth_mask, image1);
+
+    if (removeBackground)
+        cvApplyAlpha(colorImage, depth_mask, image1);
 
     colorTexture.create(image1.cols, image1.rows);
     colorTexture.update(image1.data, image1.cols, image1.rows, 0, 0);
 
     cv::Mat image2;
     //cv::cvtColor(depthImageDisplay, depthImageDisplay, cv::COLOR_GRAY2BGRA);
-    cv::cvtColor(depthImageDisplay, depthImageDisplay, cv::COLOR_RGB2BGRA);
-    cvApplyAlpha(depthImageDisplay, depth_mask, image2);
+    cv::cvtColor(depthImageDisplay, image2, cv::COLOR_RGB2BGRA);
+    
+    if (removeBackground)
+        cvApplyAlpha(depthImageDisplay, depth_mask, image2);
 
     depthTexture.create(image2.cols, image2.rows);
     depthTexture.update(image2.data, image2.cols, image2.rows, 0, 0);
@@ -307,6 +257,7 @@ void Application::Draw() {
     capture.GetFrame(&colorImage, &depthRaw);
     depthRaw.convertTo(depthImage, CV_32F);  // Most OpenCV functions only support 8U or 32F
 
+    faceTracker->Track(colorImage, depthRaw);
 
     Process();
 
@@ -325,6 +276,7 @@ void Application::Draw() {
 
     //raw_depth = depthImage.at<float>(cv::Point(static_cast<int>(100), static_cast<int>(100)));
 
+    
 
     /*
 
@@ -366,7 +318,7 @@ void Application::Draw() {
 
 
     window->draw(dot);
-    }
+    }*/
 
 
 
@@ -389,10 +341,16 @@ void Application::Draw() {
     dot.move(face_center);
 
     window->draw(dot);
-    */
-
+ 
     // Calculate distance at face center
 
+
+    if (faceTracker->isTracked) {
+        cout << 
+            faceTracker->translation.x << ", " <<
+            faceTracker->translation.y << ", " <<
+            faceTracker->translation.z << endl;
+    }
 
 
 
@@ -425,5 +383,22 @@ void Application::Draw() {
 }
 
 string Application::GetTrackingStatus() {
-    return "Unknown";
+    if (faceTracker != nullptr) {
+        if (faceTracker->isTracked) {
+            HRESULT hr = faceTracker->GetTrackStatus();
+
+            if (FAILED(hr)) {
+                return ft_error("", hr).what();
+            }
+            else {
+                return "Tracking";
+            }
+        }
+        else {
+            return "No Face Detected";
+        }
+    }
+    else {
+        return "Uninitialized";
+    }
 }

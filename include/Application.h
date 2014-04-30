@@ -13,7 +13,7 @@
 //#include <kinect\nui\Kinect.h>
 //#include <kinect\nui\ImageFrame.h>
 
-//#include "FaceTracker.h"
+#include "FaceTracker.h"
 //#include "HeadTracker.h"
 
 #include "utils\FPSCounter.h"
@@ -27,7 +27,7 @@ class Application
     // Configuration
     const std::string title = "Virtual Mirror";
     const int width = 640*2;
-    const int height = 480;
+    const int height = 480+128;
     const int fullscreen = false;    // NOTE: if fullscreen is true, width/height are ignored and the native screen resolution is used instead.
 
     //const std::string default_font_file = "data\\TitilliumWeb-Bold.ttf";
@@ -65,6 +65,8 @@ protected:
 
     Capture capture;
 
+    FaceTracker *faceTracker;
+
 private:
     FPSCounter fpsCounter;
     RunningAverage<unsigned int> trackReliability;
@@ -86,7 +88,7 @@ private:
 
     std::string GetTrackingStatus();
 
-    openni::VideoStream* oniStreams[2];
+    //openni::VideoStream* oniStreams[2];
 
 };
 

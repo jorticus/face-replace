@@ -73,8 +73,8 @@ FaceTracker::FaceTracker()
     faceRect = { 0, 0, 0, 0 };
 
     HRESULT hr;
-    FT_CAMERA_CONFIG videoConfig = { 640, 480, 1.0 };   // TODO: Don't hard-code these values
-    FT_CAMERA_CONFIG depthConfig = { 640, 480 }; 
+    FT_CAMERA_CONFIG videoConfig = { 640, 480, 531.15f };   // TODO: Don't hard-code these values
+    FT_CAMERA_CONFIG depthConfig = { 640, 480, 285.63f*2.0f };
 
     pFaceTracker = FTCreateFaceTracker(NULL);
     if (pFaceTracker == nullptr)
@@ -104,54 +104,41 @@ FaceTracker::FaceTracker()
     sensorData.ViewOffset = { 0, 0 };
 }
 
-void FaceTracker::Track(cv::Mat &colorImage, cv::Mat &depthImage)
+void FaceTracker::Track(cv::Mat colorImage, cv::Mat depthImage)
 {
     HRESULT hr;
 
     FT_SENSOR_DATA sd(pColorImage, pDepthImage, 1.0f);
+
+    cv::Mat colorimg = colorImage;
+    cv::Mat depthimg = depthImage;
+    cv::cvtColor(colorImage, colorimg, cv::COLOR_BGR2RGBA);
+
+    // The library expects D13P3 format, ie. the last 3 bits are the player index. Therefore we need to <<3 (or multiply by 8) to get it to work.
+    depthimg = depthimg * 8;      
     
     // Get camera frame buffer
-    hr = pColorImage->Attach(colorImage.cols, colorImage.rows, colorImage.data, FTIMAGEFORMAT_UINT8_B8G8R8X8, colorImage.cols*colorImage.channels());
+    hr = pColorImage->Attach(colorimg.cols, colorimg.rows, colorimg.data, FTIMAGEFORMAT_UINT8_B8G8R8X8, colorimg.cols*colorimg.channels());
     if (FAILED(hr))
         throw ft_error("Error attaching color image buffer: ", hr);
 
-    hr = pDepthImage->Attach(depthImage.cols, depthImage.rows, depthImage.data, FTIMAGEFORMAT_UINT16_D13P3, depthImage.cols);
+    hr = pDepthImage->Attach(depthimg.cols, depthimg.rows, depthimg.data, FTIMAGEFORMAT_UINT16_D13P3, depthimg.cols*2);
     if (FAILED(hr))
         throw ft_error("Error attaching depth image buffer: ", hr);
 
+
     if (!isTracked) {
-        // Initiate face tracking
-        hr = pFaceTracker->StartTracking(&sd, (hasFace) ? &faceRect : NULL, NULL, pFTResult);
-        if (SUCCEEDED(hr) && (SUCCEEDED(hr = pFTResult->GetStatus()))) {
-            isTracked = true;
-            cout << "Initial track found" << endl;
-        }
-        else {
-            if (hr == FT_ERROR_HEAD_SEARCH_FAILED)
-                hasFace = false;
-
-            isTracked = false;
-        }
-        printTrackingState("StartTracking: ", hr);
+        hr = pFaceTracker->StartTracking(&sd, NULL, NULL, pFTResult);
     }
-
     else {
-        // Continue tracking (less expensive than starting tracking every frame)
         hr = pFaceTracker->ContinueTracking(&sd, NULL, pFTResult);
-        if (SUCCEEDED(hr) && (SUCCEEDED(hr = pFTResult->GetStatus()))) {
-            isTracked = true;
-        }
-        else {
-            if (hr == E_UNEXPECTED)
-                isTracked = false;
-            //isTracked = false;
-            //pFTResult->Reset();
-        }
-        printTrackingState("ContinueTracking: ", hr);
     }
 
-    // Do something with the result
-    if (isTracked) {
+    //printTrackingState(hr);
+
+    if (SUCCEEDED(hr) && SUCCEEDED(pFTResult->GetStatus())) {
+        isTracked = true;
+
         pFTResult->GetFaceRect(&this->faceRect);
         this->hasFace = true;
 
@@ -160,8 +147,16 @@ void FaceTracker::Track(cv::Mat &colorImage, cv::Mat &depthImage)
         float translation[3];
 
         pFTResult->Get3DPose(&scale, rotation, translation);
+
+        this->scale = scale;
+        this->rotation = sf::Vector3f(rotation[0], rotation[1], rotation[2]);
+        this->translation = sf::Vector3f(translation[0], translation[1], translation[2]);
         
         pFTResult->GetStatus();
+    }
+    else {
+        isTracked = false;
+        pFTResult->Reset();
     }
 }
 
