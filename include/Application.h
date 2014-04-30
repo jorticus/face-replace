@@ -59,6 +59,8 @@ protected:
     cv::Mat depthImage;     // 32F, not normalized
     cv::Mat depthRaw;       // 16U
 
+    cv::Mat faceImage;
+
     bool newFrame;
     bool colorReady;
     bool depthReady;

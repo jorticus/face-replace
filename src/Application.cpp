@@ -251,9 +251,6 @@ void Application::Draw() {
     depthReady = false;
     colorReady = false;
 
-    //while (/*!depthReady && */!colorReady)
-        //Capture();
-
     capture.GetFrame(&colorImage, &depthRaw);
     depthRaw.convertTo(depthImage, CV_32F);  // Most OpenCV functions only support 8U or 32F
 
@@ -274,56 +271,15 @@ void Application::Draw() {
     window->draw(rgbSprite);
     window->draw(depthSprite);
 
-    //raw_depth = depthImage.at<float>(cv::Point(static_cast<int>(100), static_cast<int>(100)));
 
-    
-
-    /*
-
-    //TrackFace();
-
-    //cv::MSER mser();
-    cv::SimpleBlobDetector::Params params;
-    params.minThreshold = 40;
-    params.maxThreshold = 60;
-    params.thresholdStep = 5;
-    params.minArea = 100;
-    params.minConvexity = 0.3;
-    params.minInertiaRatio = 0.01;
-
-    params.maxArea = 8000;
-    params.maxConvexity = 10;
-
-    params.filterByColor = false;
-    params.filterByCircularity = false;
-
-    cv::Mat img;
-    cv::normalize(depthImage, img, 0.0, 255.0, cv::NORM_MINMAX, CV_8U);
-    //depthImage.convertTo(img, CV_8U);
-
-
-    cv::SimpleBlobDetector detector(params);
-    detector.create("SimpleBlob");
-
-    std::vector<cv::KeyPoint> keypoints;
-    detector.detect(img, keypoints);
-
-    for (int i = 0; i < keypoints.size(); i++) {
-    auto keypoint = keypoints[i];
-    CircleShape dot(keypoint.size, 6);
-
-    dot.setFillColor(Color::Green);
-    dot.move(keypoint.pt.x + depthLocation.x, keypoint.pt.y + depthLocation.y);
-
-
-
-    window->draw(dot);
-    }*/
-
+    // NOTE: rect is guaranteed to be within image bounds
+    RECT rect = faceTracker->faceRect;
+    cv::Size face_size(rect.right - rect.left, rect.bottom - rect.top);
+    cv::Point face_offset(rect.left, rect.top);
+    cv::Point face_center(face_offset.x + face_size.width / 2.0f, face_offset.y + face_size.height / 2.0f);
 
 
     // Draw face bounds
-    RECT rect = faceTracker->faceRect;
     RectangleShape face_bounds(Vector2f(rect.right - rect.left, rect.bottom - rect.top));
     face_bounds.move(rect.left, rect.top);
     face_bounds.setFillColor(Color::Transparent);
@@ -332,20 +288,39 @@ void Application::Draw() {
 
     window->draw(face_bounds);
 
-
     // Draw face center
-    Vector2f face_center(rect.left + (rect.right - rect.left) / 2.0f, rect.top + (rect.bottom - rect.top) / 2.0f);
-
     CircleShape dot(3, 8);
     dot.setFillColor(Color::Red);
-    dot.move(face_center);
+    dot.move(face_center.x, face_center.y);
 
     window->draw(dot);
  
-    // Calculate distance at face center
-
-
+    
+    
+    int test = rect.left;
+    
     if (faceTracker->isTracked) {
+
+        // Calculate distance at face center
+        raw_depth = depthImage.at<float>(face_center.y, face_center.x);
+
+        
+        if (face_size.width > 0 && face_size.height > 0) {
+            // Capture face texture
+            faceImage = colorImage(cv::Rect(face_offset, face_size)).clone();
+
+            Texture boxedFaceTexture;
+            cv::cvtColor(faceImage, faceImage, cv::COLOR_BGR2BGRA);
+            boxedFaceTexture.create(faceImage.cols, faceImage.rows);
+            boxedFaceTexture.update(faceImage.data, faceImage.cols, faceImage.rows, 0, 0);
+
+            // Draw captured face
+            Sprite boxedFaceSprite(boxedFaceTexture);
+            boxedFaceSprite.move(8, 480 + 64 - face_size.height / 2);
+            window->draw(boxedFaceSprite);
+
+        }
+
         cout << 
             faceTracker->translation.x << ", " <<
             faceTracker->translation.y << ", " <<
