@@ -30,8 +30,11 @@ class Application
     const int height = 480+128;
     const int fullscreen = false;    // NOTE: if fullscreen is true, width/height are ignored and the native screen resolution is used instead.
 
-    //const std::string default_font_file = "data\\TitilliumWeb-Bold.ttf";
-    const std::string default_font_file = "data\\Exo-Bold.ttf";
+    const std::string resources_dir = "resources\\";
+    const std::string capture_dir = "cap\\";
+
+    //const std::string default_font_file = "fonts\\TitilliumWeb-Bold.ttf";
+    const std::string default_font_file = "fonts\\Exo-Bold.ttf";
 
     const int depth_threshold = 2400; //mm
 
@@ -51,6 +54,10 @@ protected:
     //void Capture();
     void Process();
     void Draw();
+    void DrawVideo();
+    void Draw3D();
+    void DrawOverlay();
+    void DrawStatus();
 
     void OnKeyPress(sf::Event e);
 
@@ -78,7 +85,8 @@ private:
     sf::Font fps_font;
     sf::Font font;
 
-    sf::Texture wolf_tex;
+    sf::Texture faceTexture;
+    sf::Sprite faceSprite;
 
     sf::Texture depthTexture;
     sf::Texture colorTexture;
@@ -91,6 +99,12 @@ private:
     std::string GetTrackingStatus();
 
     //openni::VideoStream* oniStreams[2];
+
+    float raw_depth;
+
+    cv::Size face_size;
+    cv::Point face_offset;
+    cv::Point face_center;
 
 };
 

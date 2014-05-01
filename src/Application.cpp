@@ -36,6 +36,51 @@ Application::~Application()
     capture.Stop();
 }
 
+void Application::InitializeResources() {
+    cout << "Loading resources" << endl;
+
+    // Load default font
+    if (!font.loadFromFile(resources_dir + this->default_font_file))
+        throw runtime_error("Could not load font \"" + default_font_file + "\"");
+
+    // Load shaders
+    if (!outlineShader.loadFromFile(resources_dir + "outline-shader.frag", Shader::Type::Fragment))
+        throw runtime_error("Could not load shader \"outline-shader.frag\"");
+
+    outlineShader.setParameter("outlineColor", Color::Black);
+    outlineShader.setParameter("outlineWidth", 0.008f);
+
+    
+    cout << "Loading faces" << endl;
+    faceTexture.loadFromFile(resources_dir + +"faces\\gaben.png");
+    faceSprite.setTexture(faceTexture);
+}
+
+void Application::InitializeWindow() {
+    // OpenGL-specific settings
+    ContextSettings settings;
+    settings.depthBits = 24;
+    settings.stencilBits = 8;
+    settings.antialiasingLevel = 4;
+    settings.majorVersion = 3;
+    settings.minorVersion = 0;
+
+    if (this->fullscreen) {
+        // Return all allowable full-screen modes, sorted from best to worst.
+        auto modes = sf::VideoMode::getFullscreenModes();
+
+        // Use the best mode to set the window to be full-screen
+        this->window = new RenderWindow(modes[0], this->title, Style::Fullscreen, settings);
+    }
+    else {
+        // Otherwise use the specified width/height to create a windowed window
+        window = new RenderWindow(sf::VideoMode(this->width, this->height), this->title, Style::Default, settings);
+    }
+    this->window->setVerticalSyncEnabled(true);
+
+    cout << "Started" << endl;
+}
+
 int Application::Main()
 {
     InitializeResources();
@@ -73,15 +118,12 @@ int Application::Main()
             }
         }
 
-        //fpsCounter.BeginPeriod();
+        fpsCounter.BeginPeriod();
 
         // Drawing loop
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         Draw();
-        window->display();
 
         fpsCounter.EndPeriod();
-        fpsCounter.BeginPeriod();
     }
 
     return 0;
@@ -98,60 +140,18 @@ void Application::OnKeyPress(sf::Event e) {
         // Save current color/depth streams to disk
         cv::Mat colorTemp;
         cv::cvtColor(colorImage, colorTemp, cv::COLOR_BGR2RGB);
-        cv::imwrite("cap\\color.png", colorTemp);
+        cv::imwrite(capture_dir + "color.png", colorTemp);
 
         cv::Mat depthTemp;
         cv::normalize(depthImage, depthTemp, 0.0, 255.0, cv::NORM_MINMAX, CV_8U);
         cv::applyColorMap(depthTemp, depthTemp, cv::COLORMAP_JET);
-        cv::imwrite("cap\\depthraw.png", depthRaw);
-        cv::imwrite("cap\\depth.png", depthTemp);
+        cv::imwrite(capture_dir + "depthraw.png", depthRaw);
+        cv::imwrite(capture_dir + "depth.png", depthTemp);
 
         // Capture screenshot of window
         sf::Image screenshot = window->capture();
-        screenshot.saveToFile("cap\\screenshot.png");
+        screenshot.saveToFile(capture_dir + "screenshot.png");
     }
-}
-
-
-void Application::InitializeResources() {
-    cout << "Loading resources" << endl;
-
-    // Load default font
-    if (!font.loadFromFile(this->default_font_file))
-        throw runtime_error("Could not load font \"" + default_font_file + "\"");
-
-    // Load shaders
-    if (!outlineShader.loadFromFile("data\\outline-shader.frag", Shader::Type::Fragment))
-        throw runtime_error("Could not load shader \"outline-shader.frag\"");
-
-    outlineShader.setParameter("outlineColor", Color::Black);
-    outlineShader.setParameter("outlineWidth", 0.008f);
-}
-
-
-void Application::InitializeWindow() {
-    // OpenGL-specific settings
-    ContextSettings settings;
-    settings.depthBits = 24;
-    settings.stencilBits = 8;
-    settings.antialiasingLevel = 4;
-    settings.majorVersion = 3;
-    settings.minorVersion = 0;
-
-    if (this->fullscreen) {
-        // Return all allowable full-screen modes, sorted from best to worst.
-        auto modes = sf::VideoMode::getFullscreenModes();
-
-        // Use the best mode to set the window to be full-screen
-        this->window = new RenderWindow(modes[0], this->title, Style::Fullscreen, settings);
-    }
-    else {
-        // Otherwise use the specified width/height to create a windowed window
-        window = new RenderWindow(sf::VideoMode(this->width, this->height), this->title, Style::Default, settings);
-    }
-    this->window->setVerticalSyncEnabled(true);
-
-    cout << "Started" << endl;
 }
 
 void cvApplyAlpha(cv::Mat rgb_in, cv::Mat alpha_in, cv::Mat &rgba_out) {
@@ -161,6 +161,33 @@ void cvApplyAlpha(cv::Mat rgb_in, cv::Mat alpha_in, cv::Mat &rgba_out) {
     cv::Mat in[] = { rgb_in, alpha_in };
     cv::Mat out[] = { rgba_out };
     cv::mixChannels(in, 2, out, 1, from_to, 4);
+}
+
+void Application::Draw() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    window->clear(Color::White);
+
+    // Retrieve captured video color/depth frames
+    capture.GetFrame(&colorImage, &depthRaw);
+    depthRaw.convertTo(depthImage, CV_32F);  // Most OpenCV functions only support 8U or 32F
+
+    // Try track the face in the current frame
+    faceTracker->Track(colorImage, depthRaw);
+
+    // Custom processing on frame
+    Process();
+
+    // Drawing
+    DrawVideo();
+
+    window->pushGLStates();
+    Draw3D();
+    window->popGLStates();
+
+    DrawOverlay();
+    DrawStatus();
+
+    window->display();
 }
 
 void Application::Process() {
@@ -235,6 +262,12 @@ void Application::Process() {
     depthTexture.update(image2.data, image2.cols, image2.rows, 0, 0);
 
 
+    // Get face bounds
+    // NOTE: rect is guaranteed to be within image bounds
+    RECT rect = faceTracker->faceRect;
+    face_size = cv::Size(rect.right - rect.left, rect.bottom - rect.top);
+    face_offset = cv::Point(rect.left, rect.top);
+    face_center = cv::Point(face_offset.x + face_size.width / 2.0f, face_offset.y + face_size.height / 2.0f);
 }
 
 void Application::TrackFace() {
@@ -243,21 +276,7 @@ void Application::TrackFace() {
    //trackReliability.AddSample(faceTracker->isTracked);
 }
 
-void Application::Draw() {
-    float raw_depth = NAN;
-
-    window->clear(Color::White);
-
-    depthReady = false;
-    colorReady = false;
-
-    capture.GetFrame(&colorImage, &depthRaw);
-    depthRaw.convertTo(depthImage, CV_32F);  // Most OpenCV functions only support 8U or 32F
-
-    faceTracker->Track(colorImage, depthRaw);
-
-    Process();
-
+void Application::DrawVideo() {
     // Draw rgb and depth textures to the window
     Vector2f rgbLocation(0, 0);
     Vector2f depthLocation(colorImage.cols, (colorImage.rows - depthImage.rows) / 2);
@@ -270,23 +289,23 @@ void Application::Draw() {
 
     window->draw(rgbSprite);
     window->draw(depthSprite);
+}
 
+void Application::Draw3D() {
+    //TODO: Draw 3D meshes here
+}
 
-    // NOTE: rect is guaranteed to be within image bounds
-    RECT rect = faceTracker->faceRect;
-    cv::Size face_size(rect.right - rect.left, rect.bottom - rect.top);
-    cv::Point face_offset(rect.left, rect.top);
-    cv::Point face_center(face_offset.x + face_size.width / 2.0f, face_offset.y + face_size.height / 2.0f);
-
+void Application::DrawOverlay() {
+    raw_depth = NAN;
 
     // Draw face bounds
-    RectangleShape face_bounds(Vector2f(rect.right - rect.left, rect.bottom - rect.top));
-    face_bounds.move(rect.left, rect.top);
+    RectangleShape face_bounds(Vector2f(face_size.width, face_size.height));
+    face_bounds.move(face_offset.x, face_offset.y);
     face_bounds.setFillColor(Color::Transparent);
     face_bounds.setOutlineColor((faceTracker->isTracked) ? Color::Red : Color(255, 0, 0, 40));
     face_bounds.setOutlineThickness(2.5f);
 
-    window->draw(face_bounds);
+    //window->draw(face_bounds);
 
     // Draw face center
     CircleShape dot(3, 8);
@@ -294,17 +313,13 @@ void Application::Draw() {
     dot.move(face_center.x, face_center.y);
 
     window->draw(dot);
- 
-    
-    
-    int test = rect.left;
-    
+
     if (faceTracker->isTracked) {
 
         // Calculate distance at face center
         raw_depth = depthImage.at<float>(face_center.y, face_center.x);
 
-        
+
         if (face_size.width > 0 && face_size.height > 0) {
             // Capture face texture
             faceImage = colorImage(cv::Rect(face_offset, face_size)).clone();
@@ -318,17 +333,24 @@ void Application::Draw() {
             Sprite boxedFaceSprite(boxedFaceTexture);
             boxedFaceSprite.move(8, 480 + 64 - face_size.height / 2);
             window->draw(boxedFaceSprite);
-
         }
 
-        cout << 
+        cout <<
             faceTracker->translation.x << ", " <<
             faceTracker->translation.y << ", " <<
             faceTracker->translation.z << endl;
     }
 
+    // Update face overlay
+    auto src_size = faceTexture.getSize();
+    auto dest_size = sf::Vector2f(face_size.width, face_size.height);
+    sf::Vector2f face_scale(dest_size.x / src_size.x, dest_size.y / src_size.y);
+    faceSprite.setScale(face_scale);
+    faceSprite.setPosition(face_offset.x, face_offset.y);
+    window->draw(faceSprite);
+}
 
-
+void Application::DrawStatus() {
     // Draw status text
     boost::format fps_fmt("%.1f (%.1f) FPS");
     fps_fmt % fpsCounter.GetAverageFps();
