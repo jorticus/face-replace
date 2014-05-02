@@ -94,6 +94,8 @@ void Application::InitializeWindow() {
     window->setVerticalSyncEnabled(true);
     window->setActive(true);
 
+    initialSize = window->getSize();
+
     cout << "Started" << endl;
 }
 
@@ -103,17 +105,21 @@ void Application::Initialize3D() {
     //glDepthMask(GL_TRUE);
     //glClearDepth(1.0f);
 
-    glDisable(GL_LIGHTING);
+    // Configure viewport (clipped to within the color video stream)
+    Vector2f scale(
+        static_cast<float>(window->getSize().x) / static_cast<float>(initialSize.x),
+        static_cast<float>(window->getSize().y)  / static_cast<float>(initialSize.y)
+     );
+    glViewport(0, scale.y * (initialSize.y - 480.0f), scale.x * 640.0f, scale.y * 480.0f);
 
-    // Configure viewport
-    glViewport(0, 0, window->getSize().x, window->getSize().y);
 
     // Set up perspective projection
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    GLfloat ratio = static_cast<float>(window->getSize().x) / window->getSize().y;
+    //GLfloat ratio = static_cast<float>(window->getSize().x) / window->getSize().y;
+    GLfloat ratio = 640.0f / 480.0f;
     glFrustum(-ratio, ratio, -1.f, 1.f, 1.f, 500.f);
-    //gluPerspective(45.f, 1.f, 1.f, 500.f);
+    //gluPerspective(90.f, 1.f, 1.f, 500.f);
 }
 
 int Application::Main()
@@ -145,7 +151,8 @@ int Application::Main()
                 break;
 
             case Event::Resized:
-                glViewport(0, 0, event.size.width, event.size.height);
+                //glViewport(0, 0, event.size.width, event.size.height);
+                Initialize3D();
                 break;
 
             case Event::KeyPressed:
@@ -229,13 +236,15 @@ void Application::Draw() {
     target->pushGLStates();
     DrawVideo(target);
 
+    // Draw 2D overlays
+    DrawOverlay(target);
+
     // Draw 3D geometry
     target->popGLStates();
     Draw3D(target);
     target->pushGLStates();
 
-    // Draw 2D overlays
-    DrawOverlay(target);
+
     
     // Draw the captured screen texture with any applied shaders
     if (ssfx_enabled) {
@@ -357,6 +366,8 @@ void Application::DrawVideo(RenderTarget* target) {
 
 void Application::Draw3D(RenderTarget* target) {
     glClear(GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_LIGHTING);
+
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();

@@ -80,6 +80,8 @@ protected:
     FaceTracker *faceTracker;
 
 private:
+    sf::Vector2u initialSize;
+
     FPSCounter fpsCounter;
     RunningAverage<unsigned int> trackReliability;
 
