@@ -9,6 +9,8 @@
 
 #include <boost\format.hpp>
 
+#include <NuiApi.h>
+
 using namespace std;
 using namespace sf;
 using namespace openni;
@@ -363,13 +365,19 @@ void Application::DrawVideo(RenderTarget* target) {
 }
 
 void Application::Draw3D(RenderTarget* target) {
-    /// Draw XYZ marker
     //glClear(GL_DEPTH_BUFFER_BIT);
     glDisable(GL_LIGHTING);
-    //glDisable(GL_DEPTH);
 
+
+    //// Draw XYZ marker ////
+
+    glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    //glTranslatef(0.f, 0.f, 0.0f);
+    glFrustum(-aspectRatio, aspectRatio, -1.f, 1.f, 1.f, 500.f);
+
+    //glMatrixMode(GL_MODELVIEW);  // Why doesn't the following show when I enable this?
+    glLoadIdentity();
+    //glTranslatef(0.f, 0.f, 10.0f);
     glScalef(0.1f, 0.1f, 0.1f);
     glRotatef(faceTracker->rotation.x, -1.f,  0.f,  0.f);
     glRotatef(faceTracker->rotation.y,  0.f, -1.f,  0.f);
@@ -390,10 +398,14 @@ void Application::Draw3D(RenderTarget* target) {
     glEnd();
     
 
+    //// Draw face mesh ////
+
     // Set up perspective projection
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(10.f, aspectRatio, 1.f, 500.0f);
+    
+    // Set up the correct perspective projection matrix for the kinect
+    gluPerspective(NUI_CAMERA_COLOR_NOMINAL_VERTICAL_FOV, 4.f/3.f, 0.1f, 10.0f);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -401,11 +413,8 @@ void Application::Draw3D(RenderTarget* target) {
         0.f, 0.f, 0.f,
         0.f, 0.f, 1.f,
         0.f, 1.f, 0.f);
-    glTranslatef(0.f, 0.f, 1.f);
-    //glScalef(100.f, 100.f, -1.f);
     glScalef(-1.f, 1.f, 1.f);
     target->draw(faceTracker->model);
-
 }
 
 void Application::DrawOverlay(RenderTarget* target) {
@@ -418,7 +427,7 @@ void Application::DrawOverlay(RenderTarget* target) {
     face_bounds.setOutlineColor((faceTracker->isTracked) ? Color::Red : Color(255, 0, 0, 40));
     face_bounds.setOutlineThickness(2.5f);
 
-    //window->draw(face_bounds);
+    window->draw(face_bounds);
 
     // Draw face center
     CircleShape dot(3, 8);
@@ -466,7 +475,7 @@ void Application::DrawOverlay(RenderTarget* target) {
         faceSprite.setScale(face_scale);
         faceSprite.setPosition(face_offset.x, face_offset.y);
 
-        target->draw(faceSprite);
+        //target->draw(faceSprite);
     }
 }
 
