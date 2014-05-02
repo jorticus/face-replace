@@ -40,7 +40,7 @@ class Application
 
 public:
     std::vector<std::wstring> args;
-    sf::RenderWindow *window = nullptr;
+    sf::RenderWindow *window;
 
     Application(int argc, _TCHAR* argv[]);
     ~Application();

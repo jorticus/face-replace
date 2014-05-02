@@ -15,7 +15,9 @@ using namespace openni;
 
 Application::Application(int argc, _TCHAR* argv[]) :
 fpsCounter(32),
-trackReliability(128)
+trackReliability(128),
+window(nullptr),
+faceTracker(nullptr)
 {
     // Convert command-line arguments to std::vector
     for (int i = 0; i < argc; i++)
@@ -44,7 +46,7 @@ void Application::InitializeResources() {
         throw runtime_error("Could not load font \"" + default_font_file + "\"");
 
     // Load shaders
-    if (!outlineShader.loadFromFile(resources_dir + "outline-shader.frag", Shader::Type::Fragment))
+    if (!outlineShader.loadFromFile(resources_dir + "shaders\\outline-shader.frag", Shader::Type::Fragment))
         throw runtime_error("Could not load shader \"outline-shader.frag\"");
 
     outlineShader.setParameter("outlineColor", Color::Black);
@@ -345,7 +347,7 @@ void Application::Draw3D() {
 
 
     glLoadIdentity();
-    //glTranslatef(0.f, 0.f, -10.f);
+    glTranslatef(0.f, 0.f, -10.f);
     //glScalef(100.f, 100.f, -1.f);
     window->draw(faceTracker->model);
 
