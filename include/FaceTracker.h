@@ -4,7 +4,7 @@
 
 #include <Windows.h>
 #include <FaceTrackLib.h> // Part of the Microsoft Kinect Developer Toolkit
-#include "FaceTrackerBase.h"
+#include "FaceModel.h"
 
 #include <SFML\Graphics.hpp>
 
@@ -39,10 +39,15 @@ public:
     sf::Vector3f    rotation;
     sf::Vector3f    translation;
 
+    FaceModel       model;
+
 private:
+    FT_CAMERA_CONFIG videoConfig, depthConfig;
+
     IFTFaceTracker* pFaceTracker = NULL;
     
     IFTResult*      pFTResult = NULL;
+    IFTModel*       pModel = NULL;
 
     IFTImage*       pColorImage = NULL;
     IFTImage*       pDepthImage = NULL;

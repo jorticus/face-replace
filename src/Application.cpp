@@ -53,6 +53,7 @@ void Application::InitializeResources() {
     
     cout << "Loading faces" << endl;
     faceTexture.loadFromFile(resources_dir + +"faces\\gaben.png");
+    //faceTexture.setSmooth(true);
     faceSprite.setTexture(faceTexture);
 }
 
@@ -76,9 +77,30 @@ void Application::InitializeWindow() {
         // Otherwise use the specified width/height to create a windowed window
         window = new RenderWindow(sf::VideoMode(this->width, this->height), this->title, Style::Default, settings);
     }
-    this->window->setVerticalSyncEnabled(true);
+
+    window->setVerticalSyncEnabled(true);
+    window->setActive(true);
 
     cout << "Started" << endl;
+}
+
+void Application::Initialize3D() {
+    // Enable Z-buffer
+    //glEnable(GL_DEPTH_TEST);
+    //glDepthMask(GL_TRUE);
+    //glClearDepth(1.0f);
+
+    glDisable(GL_LIGHTING);
+
+    // Configure viewport
+    glViewport(0, 0, window->getSize().x, window->getSize().y);
+
+    // Set up perspective projection
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    GLfloat ratio = static_cast<float>(window->getSize().x) / window->getSize().y;
+    glFrustum(-ratio, ratio, -1.f, 1.f, 1.f, 500.f);
+    //gluPerspective(45.f, 1.f, 1.f, 500.f);
 }
 
 int Application::Main()
@@ -91,6 +113,7 @@ int Application::Main()
     
     InitializeWindow();
     
+    Initialize3D();
 
     colorImage = cv::Mat(480, 640, CV_8UC3);
     depthImage = cv::Mat(480, 640, CV_32F);
@@ -128,7 +151,6 @@ int Application::Main()
 
     return 0;
 }
-
 
 void Application::OnKeyPress(sf::Event e) {
     switch (e.key.code) {
@@ -178,14 +200,16 @@ void Application::Draw() {
     Process();
 
     // Drawing
-    DrawVideo();
-
     window->pushGLStates();
-    Draw3D();
+        DrawVideo();
     window->popGLStates();
-
-    DrawOverlay();
-    DrawStatus();
+    
+    Draw3D();
+    
+    window->pushGLStates();
+        DrawOverlay();
+        DrawStatus();
+    window->popGLStates();
 
     window->display();
 }
@@ -292,7 +316,39 @@ void Application::DrawVideo() {
 }
 
 void Application::Draw3D() {
-    //TODO: Draw 3D meshes here
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+
+    // Rotation Marker
+    glLoadIdentity();
+    glTranslatef(0.f, 0.f, -10.f);
+    glRotatef(faceTracker->rotation.x, -1.f,  0.f,  0.f);
+    glRotatef(faceTracker->rotation.y,  0.f, -1.f,  0.f);
+    glRotatef(faceTracker->rotation.z,  0.f,  0.f,  1.f);
+    
+    glBegin(GL_LINES);
+        glColor3f(1.f, 0.f, 0.f);
+        glVertex3f(0.f, 0.f, 0.f);
+        glVertex3f(1.f, 0.f, 0.f);
+
+        glColor3f(0.f, 1.f, 0.f);
+        glVertex3f(0.f, 0.f, 0.f);
+        glVertex3f(0.f, 1.f, 0.f);
+
+        glColor3f(0.f, 0.f, 1.f);
+        glVertex3f(0.f, 0.f, 0.f);
+        glVertex3f(0.f, 0.f, 1.f);
+    glEnd();
+
+
+    glLoadIdentity();
+    //glTranslatef(0.f, 0.f, -10.f);
+    //glScalef(100.f, 100.f, -1.f);
+    window->draw(faceTracker->model);
+
 }
 
 void Application::DrawOverlay() {
@@ -335,19 +391,25 @@ void Application::DrawOverlay() {
             window->draw(boxedFaceSprite);
         }
 
-        cout <<
-            faceTracker->translation.x << ", " <<
-            faceTracker->translation.y << ", " <<
-            faceTracker->translation.z << endl;
-    }
+        //cout <<
+        //    faceTracker->translation.x << ", " <<
+        //    faceTracker->translation.y << ", " <<
+        //    faceTracker->translation.z << endl;
 
-    // Update face overlay
-    auto src_size = faceTexture.getSize();
-    auto dest_size = sf::Vector2f(face_size.width, face_size.height);
-    sf::Vector2f face_scale(dest_size.x / src_size.x, dest_size.y / src_size.y);
-    faceSprite.setScale(face_scale);
-    faceSprite.setPosition(face_offset.x, face_offset.y);
-    window->draw(faceSprite);
+        cout <<
+            faceTracker->rotation.x << ", " <<
+            faceTracker->rotation.y << ", " <<
+            faceTracker->rotation.z << endl;
+
+
+        // Update face overlay
+        auto src_size = faceTexture.getSize();
+        auto dest_size = sf::Vector2f(face_size.width, face_size.height);
+        sf::Vector2f face_scale(dest_size.x / src_size.x, dest_size.y / src_size.y);
+        faceSprite.setScale(face_scale);
+        faceSprite.setPosition(face_offset.x, face_offset.y);
+        window->draw(faceSprite);
+    }
 }
 
 void Application::DrawStatus() {
@@ -366,15 +428,15 @@ void Application::DrawStatus() {
     text_status.setColor(Color::White);
     window->draw(text_status, &outlineShader);
 
-    Text text_track((boost::format("Reliability %.2f%%") % (trackReliability.GetAverage() * 100.0f)).str(), font, 16);
+    /*Text text_track((boost::format("Reliability %.2f%%") % (trackReliability.GetAverage() * 100.0f)).str(), font, 16);
     text_track.move(8, 0);
     text_track.setColor(Color::White);
-    window->draw(text_track, &outlineShader);
+    window->draw(text_track, &outlineShader);*/
 
     Text text_dist(
         (!isnan(raw_depth)) ? (boost::format("Distance %.1fmm") % raw_depth).str() : "Distance --", 
         font, 16);
-    text_dist.move(270, 0);
+    text_dist.move(8, 0);
     text_dist.setColor(Color::White);
     window->draw(text_dist, &outlineShader);
 }

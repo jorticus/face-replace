@@ -50,6 +50,7 @@ public:
 protected:
     void InitializeResources();
     void InitializeWindow();
+    void Initialize3D();
 
     //void Capture();
     void Process();

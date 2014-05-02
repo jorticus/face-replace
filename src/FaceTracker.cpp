@@ -73,8 +73,8 @@ FaceTracker::FaceTracker()
     faceRect = { 0, 0, 0, 0 };
 
     HRESULT hr;
-    FT_CAMERA_CONFIG videoConfig = { 640, 480, 531.15f };   // TODO: Don't hard-code these values
-    FT_CAMERA_CONFIG depthConfig = { 640, 480, 285.63f*2.0f };
+    videoConfig = { 640, 480, 531.15f };   // TODO: Don't hard-code these values
+    depthConfig = { 640, 480, 285.63f*2.0f };
 
     pFaceTracker = FTCreateFaceTracker(NULL);
     if (pFaceTracker == nullptr)
@@ -97,6 +97,8 @@ FaceTracker::FaceTracker()
     pDepthImage = FTCreateImage();
     if (pDepthImage == nullptr || FAILED(hr = pDepthImage->Allocate(depthConfig.Width, depthConfig.Height, FTIMAGEFORMAT_UINT16_D13P3)))
         throw runtime_error("Could not allocate depth image for face tracker");
+
+    model.Initialize(pFaceTracker);
 
     sensorData.pVideoFrame = pColorImage;
     sensorData.pDepthFrame = pDepthImage;
@@ -138,20 +140,20 @@ void FaceTracker::Track(cv::Mat colorImage, cv::Mat depthImage)
 
     if (SUCCEEDED(hr) && SUCCEEDED(pFTResult->GetStatus())) {
         isTracked = true;
+        hasFace = true;
 
         pFTResult->GetFaceRect(&this->faceRect);
-        this->hasFace = true;
 
-        float scale;
-        float rotation[3];
-        float translation[3];
-
+        float scale, rotation[3], translation[3];
         pFTResult->Get3DPose(&scale, rotation, translation);
 
         this->scale = scale;
         this->rotation = sf::Vector3f(rotation[0], rotation[1], rotation[2]);
         this->translation = sf::Vector3f(translation[0], translation[1], translation[2]);
-        
+
+        // Get 3D face model
+        model.UpdateModel(pFTResult, &videoConfig);
+
         pFTResult->GetStatus();
     }
     else {
