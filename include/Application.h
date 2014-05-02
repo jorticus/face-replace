@@ -81,6 +81,7 @@ protected:
 
 private:
     sf::Vector2u initialSize;
+    GLfloat aspectRatio;
 
     FPSCounter fpsCounter;
     RunningAverage<unsigned int> trackReliability;

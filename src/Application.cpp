@@ -112,14 +112,12 @@ void Application::Initialize3D() {
      );
     glViewport(0, scale.y * (initialSize.y - 480.0f), scale.x * 640.0f, scale.y * 480.0f);
 
+    //aspectRatio = static_cast<float>(window->getSize().x) / window->getSize().y;
+    aspectRatio = 640.0f / 480.0f;
 
-    // Set up perspective projection
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    //GLfloat ratio = static_cast<float>(window->getSize().x) / window->getSize().y;
-    GLfloat ratio = 640.0f / 480.0f;
-    glFrustum(-ratio, ratio, -1.f, 1.f, 1.f, 500.f);
-    //gluPerspective(90.f, 1.f, 1.f, 500.f);
+    glFrustum(-aspectRatio, aspectRatio, -1.f, 1.f, 1.f, 500.f);
 }
 
 int Application::Main()
@@ -206,7 +204,7 @@ void cvApplyAlpha(cv::Mat rgb_in, cv::Mat alpha_in, cv::Mat &rgba_out) {
 }
 
 void Application::Draw() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     window->clear(Color::White);
 
     // Retrieve captured video color/depth frames
@@ -365,17 +363,14 @@ void Application::DrawVideo(RenderTarget* target) {
 }
 
 void Application::Draw3D(RenderTarget* target) {
-    glClear(GL_DEPTH_BUFFER_BIT);
+    /// Draw XYZ marker
+    //glClear(GL_DEPTH_BUFFER_BIT);
     glDisable(GL_LIGHTING);
+    //glDisable(GL_DEPTH);
 
-
-    glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
-
-    // Rotation Marker
-    glLoadIdentity();
-    glTranslatef(0.f, 0.f, -10.f);
+    //glTranslatef(0.f, 0.f, 0.0f);
+    glScalef(0.1f, 0.1f, 0.1f);
     glRotatef(faceTracker->rotation.x, -1.f,  0.f,  0.f);
     glRotatef(faceTracker->rotation.y,  0.f, -1.f,  0.f);
     glRotatef(faceTracker->rotation.z,  0.f,  0.f,  1.f);
@@ -393,11 +388,22 @@ void Application::Draw3D(RenderTarget* target) {
         glVertex3f(0.f, 0.f, 0.f);
         glVertex3f(0.f, 0.f, 1.f);
     glEnd();
+    
 
-
+    // Set up perspective projection
+    glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glTranslatef(0.f, 0.f, -10.f);
-    glScalef(100.f, 100.f, -1.f);
+    gluPerspective(10.f, aspectRatio, 1.f, 500.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(
+        0.f, 0.f, 0.f,
+        0.f, 0.f, 1.f,
+        0.f, 1.f, 0.f);
+    glTranslatef(0.f, 0.f, 1.f);
+    //glScalef(100.f, 100.f, -1.f);
+    glScalef(-1.f, 1.f, 1.f);
     target->draw(faceTracker->model);
 
 }
@@ -447,10 +453,10 @@ void Application::DrawOverlay(RenderTarget* target) {
         //    faceTracker->translation.y << ", " <<
         //    faceTracker->translation.z << endl;
 
-        cout <<
-            faceTracker->rotation.x << ", " <<
-            faceTracker->rotation.y << ", " <<
-            faceTracker->rotation.z << endl;
+        //cout <<
+        //    faceTracker->rotation.x << ", " <<
+        //    faceTracker->rotation.y << ", " <<
+        //    faceTracker->rotation.z << endl;
 
 
         // Update face overlay
