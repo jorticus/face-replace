@@ -38,6 +38,8 @@ class Application
 
     const int depth_threshold = 2400; //mm
 
+    const bool ssfx_enabled = false;  // Screen-space effects
+
 public:
     std::vector<std::wstring> args;
     sf::RenderWindow *window;
@@ -55,10 +57,10 @@ protected:
     //void Capture();
     void Process();
     void Draw();
-    void DrawVideo();
-    void Draw3D();
-    void DrawOverlay();
-    void DrawStatus();
+    void DrawVideo(sf::RenderTarget* target);
+    void Draw3D(sf::RenderTarget* target);
+    void DrawOverlay(sf::RenderTarget* target);
+    void DrawStatus(sf::RenderTarget* target);
 
     void OnKeyPress(sf::Event e);
 
@@ -82,6 +84,7 @@ private:
     RunningAverage<unsigned int> trackReliability;
 
     sf::Shader outlineShader;
+    sf::Shader pixelateShader;
 
     sf::Font fps_font;
     sf::Font font;

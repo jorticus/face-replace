@@ -13,6 +13,15 @@ using namespace std;
 using namespace sf;
 using namespace openni;
 
+/*class ScreenspaceShader : public sf::Drawable {
+public:
+    ScreenspaceShader(sf::Shader shader): m_shader(shader){}
+    virtual ~ScreenspaceShader() {}
+
+private:
+    sf::Shader m_shader;
+};*/
+
 Application::Application(int argc, _TCHAR* argv[]) :
 fpsCounter(32),
 trackReliability(128),
@@ -52,6 +61,8 @@ void Application::InitializeResources() {
     outlineShader.setParameter("outlineColor", Color::Black);
     outlineShader.setParameter("outlineWidth", 0.008f);
 
+    pixelateShader.loadFromFile(resources_dir + "shaders\\pixelate.frag", Shader::Type::Fragment);
+    pixelateShader.setParameter("pixel_threshold", 0.1f);
     
     cout << "Loading faces" << endl;
     faceTexture.loadFromFile(resources_dir + +"faces\\gaben.png");
@@ -201,18 +212,45 @@ void Application::Draw() {
     // Custom processing on frame
     Process();
 
-    // Drawing
-    window->pushGLStates();
-        DrawVideo();
-    window->popGLStates();
-    
-    Draw3D();
-    
-    window->pushGLStates();
-        DrawOverlay();
-        DrawStatus();
-    window->popGLStates();
+    // If screen-space shaders are enabled, create a render texture target to draw to.
+    RenderTexture tex;
+    if (ssfx_enabled) {
+        //TODO: Instead of creating a texture every frame, only create when initialized & resized
+        tex.create(window->getSize().x, window->getSize().y, true);
+        tex.clear(Color::White);
+        tex.setView(window->getView());
 
+        // Set up OpenGL settings for the current texture
+        Initialize3D();
+    }
+    RenderTarget* target = (ssfx_enabled) ? reinterpret_cast<RenderTarget*>(&tex) : window;
+
+    // Draw video stream
+    target->pushGLStates();
+    DrawVideo(target);
+
+    // Draw 3D geometry
+    target->popGLStates();
+    Draw3D(target);
+    target->pushGLStates();
+
+    // Draw 2D overlays
+    DrawOverlay(target);
+    
+    // Draw the captured screen texture with any applied shaders
+    if (ssfx_enabled) {
+        tex.display();  // Required
+
+        pixelateShader.setParameter("pixel_threshold", 0.001f);
+        window->draw(sf::Sprite(tex.getTexture()), &pixelateShader);
+    }
+
+    // Draw status information on top (not affected by the shader)
+    DrawStatus(window);
+
+    target->popGLStates();
+
+    // Finally update the screen
     window->display();
 }
 
@@ -302,7 +340,7 @@ void Application::TrackFace() {
    //trackReliability.AddSample(faceTracker->isTracked);
 }
 
-void Application::DrawVideo() {
+void Application::DrawVideo(RenderTarget* target) {
     // Draw rgb and depth textures to the window
     Vector2f rgbLocation(0, 0);
     Vector2f depthLocation(colorImage.cols, (colorImage.rows - depthImage.rows) / 2);
@@ -313,11 +351,11 @@ void Application::DrawVideo() {
     rgbSprite.move(rgbLocation);
     depthSprite.move(depthLocation);
 
-    window->draw(rgbSprite);
-    window->draw(depthSprite);
+    target->draw(rgbSprite);
+    target->draw(depthSprite);
 }
 
-void Application::Draw3D() {
+void Application::Draw3D(RenderTarget* target) {
     glClear(GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_MODELVIEW);
@@ -348,12 +386,12 @@ void Application::Draw3D() {
 
     glLoadIdentity();
     glTranslatef(0.f, 0.f, -10.f);
-    //glScalef(100.f, 100.f, -1.f);
-    window->draw(faceTracker->model);
+    glScalef(100.f, 100.f, -1.f);
+    target->draw(faceTracker->model);
 
 }
 
-void Application::DrawOverlay() {
+void Application::DrawOverlay(RenderTarget* target) {
     raw_depth = NAN;
 
     // Draw face bounds
@@ -370,7 +408,7 @@ void Application::DrawOverlay() {
     dot.setFillColor(Color::Red);
     dot.move(face_center.x, face_center.y);
 
-    window->draw(dot);
+    target->draw(dot);
 
     if (faceTracker->isTracked) {
 
@@ -390,7 +428,7 @@ void Application::DrawOverlay() {
             // Draw captured face
             Sprite boxedFaceSprite(boxedFaceTexture);
             boxedFaceSprite.move(8, 480 + 64 - face_size.height / 2);
-            window->draw(boxedFaceSprite);
+            target->draw(boxedFaceSprite);
         }
 
         //cout <<
@@ -410,11 +448,12 @@ void Application::DrawOverlay() {
         sf::Vector2f face_scale(dest_size.x / src_size.x, dest_size.y / src_size.y);
         faceSprite.setScale(face_scale);
         faceSprite.setPosition(face_offset.x, face_offset.y);
-        window->draw(faceSprite);
+
+        target->draw(faceSprite);
     }
 }
 
-void Application::DrawStatus() {
+void Application::DrawStatus(RenderTarget* target) {
     // Draw status text
     boost::format fps_fmt("%.1f (%.1f) FPS");
     fps_fmt % fpsCounter.GetAverageFps();
@@ -423,12 +462,12 @@ void Application::DrawStatus() {
     Text text_fps(fps_fmt.str(), font, 16);
     text_fps.move(colorImage.cols - text_fps.getLocalBounds().width, 0);
     text_fps.setColor(Color::White);
-    window->draw(text_fps, &outlineShader);
+    target->draw(text_fps, &outlineShader);
 
     Text text_status(GetTrackingStatus(), font, 16);
     text_status.move(8, 20);
     text_status.setColor(Color::White);
-    window->draw(text_status, &outlineShader);
+    target->draw(text_status, &outlineShader);
 
     /*Text text_track((boost::format("Reliability %.2f%%") % (trackReliability.GetAverage() * 100.0f)).str(), font, 16);
     text_track.move(8, 0);
@@ -440,7 +479,7 @@ void Application::DrawStatus() {
         font, 16);
     text_dist.move(8, 0);
     text_dist.setColor(Color::White);
-    window->draw(text_dist, &outlineShader);
+    target->draw(text_dist, &outlineShader);
 }
 
 string Application::GetTrackingStatus() {
