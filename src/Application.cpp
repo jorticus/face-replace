@@ -367,6 +367,7 @@ void Application::DrawVideo(RenderTarget* target) {
 void Application::Draw3D(RenderTarget* target) {
     //glClear(GL_DEPTH_BUFFER_BIT);
     glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
 
 
     //// Draw XYZ marker ////
@@ -400,6 +401,9 @@ void Application::Draw3D(RenderTarget* target) {
 
     //// Draw face mesh ////
 
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+
     // Set up perspective projection
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -414,6 +418,11 @@ void Application::Draw3D(RenderTarget* target) {
         0.f, 0.f, 1.f,
         0.f, 1.f, 0.f);
     glScalef(-1.f, 1.f, 1.f);
+
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    sf::Texture::bind(&faceTexture);
     target->draw(faceTracker->model);
 }
 

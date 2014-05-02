@@ -19,6 +19,8 @@ public:
     std::vector<FT_VECTOR3D> vertices;
     std::vector<FT_TRIANGLE> faces;
 
+    void SaveToObjFile(std::string filename) const;
+
 protected:
     virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 
@@ -27,5 +29,7 @@ private:
 
     IFTModel*           pModel;
     IFTFaceTracker*     pFaceTracker;
+
+    FT_VECTOR2D         min, max;
 };
 
