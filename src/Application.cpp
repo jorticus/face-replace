@@ -112,7 +112,9 @@ void Application::Initialize3D() {
         static_cast<float>(window->getSize().x) / static_cast<float>(initialSize.x),
         static_cast<float>(window->getSize().y)  / static_cast<float>(initialSize.y)
      );
-    glViewport(0, scale.y * (initialSize.y - 480.0f), scale.x * 640.0f, scale.y * 480.0f);
+    glViewport(
+        0, static_cast<GLint>(scale.y * (initialSize.y - 480.0f)), 
+        static_cast<GLsizei>(scale.x * 640.0f), static_cast<GLsizei>(scale.y * 480.0f));
 
     //aspectRatio = static_cast<float>(window->getSize().x) / window->getSize().y;
     aspectRatio = 640.0f / 480.0f;
@@ -340,7 +342,7 @@ void Application::Process() {
     RECT rect = faceTracker->faceRect;
     face_size = cv::Size(rect.right - rect.left, rect.bottom - rect.top);
     face_offset = cv::Point(rect.left, rect.top);
-    face_center = cv::Point(face_offset.x + face_size.width / 2.0f, face_offset.y + face_size.height / 2.0f);
+    face_center = cv::Point(face_offset.x + face_size.width / 2, face_offset.y + face_size.height / 2);
 }
 
 void Application::TrackFace() {
@@ -352,7 +354,9 @@ void Application::TrackFace() {
 void Application::DrawVideo(RenderTarget* target) {
     // Draw rgb and depth textures to the window
     Vector2f rgbLocation(0, 0);
-    Vector2f depthLocation(colorImage.cols, (colorImage.rows - depthImage.rows) / 2);
+    Vector2f depthLocation(
+        static_cast<float>(colorImage.cols), 
+        static_cast<float>((colorImage.rows - depthImage.rows) / 2));
 
     Sprite rgbSprite(colorTexture);
     Sprite depthSprite(depthTexture);
@@ -439,8 +443,8 @@ void Application::DrawOverlay(RenderTarget* target) {
     raw_depth = NAN;
 
     // Draw face bounds
-    RectangleShape face_bounds(Vector2f(face_size.width, face_size.height));
-    face_bounds.move(face_offset.x, face_offset.y);
+    RectangleShape face_bounds(Vector2f((float)face_size.width, (float)face_size.height));
+    face_bounds.move((float)face_offset.x, (float)face_offset.y);
     face_bounds.setFillColor(Color::Transparent);
     face_bounds.setOutlineColor((faceTracker->isTracked) ? Color::Red : Color(255, 0, 0, 40));
     face_bounds.setOutlineThickness(2.5f);
@@ -450,7 +454,7 @@ void Application::DrawOverlay(RenderTarget* target) {
     // Draw face center
     CircleShape dot(3, 8);
     dot.setFillColor(Color::Red);
-    dot.move(face_center.x, face_center.y);
+    dot.move((float)face_center.x, (float)face_center.y);
 
     target->draw(dot);
 
@@ -471,7 +475,7 @@ void Application::DrawOverlay(RenderTarget* target) {
 
             // Draw captured face
             Sprite boxedFaceSprite(boxedFaceTexture);
-            boxedFaceSprite.move(8, 480 + 64 - face_size.height / 2);
+            boxedFaceSprite.move(8.f, 480.f + 64.f - static_cast<float>(face_size.height) / 2.f);
             target->draw(boxedFaceSprite);
         }
 
@@ -488,10 +492,10 @@ void Application::DrawOverlay(RenderTarget* target) {
 
         // Update face overlay
         auto src_size = faceTexture.getSize();
-        auto dest_size = sf::Vector2f(face_size.width, face_size.height);
+        auto dest_size = sf::Vector2f((float)face_size.width, (float)face_size.height);
         sf::Vector2f face_scale(dest_size.x / src_size.x, dest_size.y / src_size.y);
         faceSprite.setScale(face_scale);
-        faceSprite.setPosition(face_offset.x, face_offset.y);
+        faceSprite.setPosition((float)face_offset.x, (float)face_offset.y);
 
         //target->draw(faceSprite);
     }
