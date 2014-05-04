@@ -93,7 +93,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\FaceModel.h" />
+    <ClInclude Include="include\models\CustomFaceModel.h" />
+    <ClInclude Include="include\models\FaceModel.h" />
     <ClInclude Include="include\Capture.h" />
     <ClInclude Include="include\FaceTracker.h" />
     <ClInclude Include="include\utils\FPSCounter.h" />
@@ -107,7 +108,8 @@
     <ClInclude Include="include\utils\Runnable.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\FaceModel.cpp" />
+    <ClCompile Include="src\models\CustomFaceModel.cpp" />
+    <ClCompile Include="src\models\FaceModel.cpp" />
     <ClCompile Include="src\Capture.cpp" />
     <ClCompile Include="src\FaceTracker.cpp" />
     <ClCompile Include="src\utils\FPSCounter.cpp" />

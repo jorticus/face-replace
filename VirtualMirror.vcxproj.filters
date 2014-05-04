@@ -54,10 +54,10 @@
     <ClInclude Include="include\FaceTracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\FaceModel.h">
+    <ClInclude Include="include\models\CustomFaceModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\tiny_obj_loader.h">
+    <ClInclude Include="include\models\FaceModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -83,10 +83,10 @@
     <ClCompile Include="src\FaceTracker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\FaceModel.cpp">
+    <ClCompile Include="src\models\FaceModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\tiny_obj_loader.cc">
+    <ClCompile Include="src\models\CustomFaceModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

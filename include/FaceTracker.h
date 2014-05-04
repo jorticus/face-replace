@@ -40,7 +40,7 @@ public:
     sf::Vector3f    rotation;
     sf::Vector3f    translation;
 
-    FaceModel model;
+    CustomFaceModel model;
 
 private:
     FT_CAMERA_CONFIG videoConfig, depthConfig;
