@@ -13,6 +13,11 @@ CustomFaceModel::~CustomFaceModel()
 {
 }
 
+bool CustomFaceModel::LoadMesh(std::string filename) {
+    // Load the face mesh from a .wfm file (eg. candide3.wfm)
+    return faceMesh.read(filename);
+}
+
 void CustomFaceModel::Initialize(IFTFaceTracker* pFaceTracker) {
     this->pFaceTracker = pFaceTracker;
 
@@ -25,20 +30,20 @@ void CustomFaceModel::UpdateModel(IFTResult* pFTResult, FT_CAMERA_CONFIG* pCamer
     hasModel = true;
 }
 
-/*void CustomFaceModel::DrawGL() {
-    if (hasModel) {
-        glBegin(GL_TRIANGLES);
-        for each (auto tri in faces) {
-            glTexCoord2fv(reinterpret_cast<const GLfloat*>(&uvcoords[tri.i]));
-            glVertex3fv(reinterpret_cast<const GLfloat*>(&vertices[tri.i]));
+void CustomFaceModel::DrawGL() {
+    glPushMatrix();
 
-            glTexCoord2fv(reinterpret_cast<const GLfloat*>(&uvcoords[tri.j]));
-            glVertex3fv(reinterpret_cast<const GLfloat*>(&vertices[tri.j]));
-
-            glTexCoord2fv(reinterpret_cast<const GLfloat*>(&uvcoords[tri.k]));
-            glVertex3fv(reinterpret_cast<const GLfloat*>(&vertices[tri.k]));
+    glBegin(GL_TRIANGLES);
+    for (int f = 0; f < faceMesh.nFaces(); f++) {
+        auto face = faceMesh.face(f);
+        
+        for (int v = 0; v < face.nDim(); v++) {
+            auto vertex = faceMesh.vertex(face[v]);
+            glVertex3f(vertex[0], vertex[1], vertex[2]);
         }
-        glEnd();
     }
-}*/
+    glEnd();
+
+    glPopMatrix();
+}
 

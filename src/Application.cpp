@@ -27,8 +27,7 @@ private:
 Application::Application(int argc, _TCHAR* argv[]) :
 fpsCounter(32),
 trackReliability(128),
-window(nullptr),
-faceTracker(nullptr)
+window(nullptr)
 {
     // Convert command-line arguments to std::vector
     for (int i = 0; i < argc; i++)
@@ -43,8 +42,7 @@ Application::~Application()
     if (this->window != nullptr)
         delete this->window;
 
-    if (faceTracker != nullptr)
-        delete faceTracker;
+    faceTracker.Uninitialize();
 
     capture.Stop();
 }
@@ -67,9 +65,16 @@ void Application::InitializeResources() {
     pixelateShader.setParameter("pixel_threshold", 0.1f);
     
     cout << "Loading faces" << endl;
-    faceTexture.loadFromFile(resources_dir + +"faces\\gaben.png");
+    faceTexture.loadFromFile(resources_dir + "faces\\gaben.png");
     //faceTexture.setSmooth(true);
     faceSprite.setTexture(faceTexture);
+
+    if (!faceTracker.model.LoadMesh(resources_dir + "mesh\\candide3_kinect.wfm"))
+        throw runtime_error("Error loading mesh 'candide3_kinect.wfm'");
+    
+    // You can use this to save the candide model as a VRML mesh file
+    //if (!faceMesh.write("candide3.wrl"))
+    //    throw runtime_error("Error writing mesh");
 }
 
 void Application::InitializeWindow() {
@@ -77,7 +82,7 @@ void Application::InitializeWindow() {
     ContextSettings settings;
     settings.depthBits = 24;
     settings.stencilBits = 8;
-    settings.antialiasingLevel = 4;
+    settings.antialiasingLevel = 8;
     settings.majorVersion = 3;
     settings.minorVersion = 0;
 
@@ -129,8 +134,7 @@ int Application::Main()
     InitializeResources();
 
     capture.Initialize();
-    
-    faceTracker = new FaceTracker();
+    faceTracker.Initialize();
     
     InitializeWindow();
     
@@ -216,7 +220,7 @@ void Application::Draw() {
     depthRaw.convertTo(depthImage, CV_32F);  // Most OpenCV functions only support 8U or 32F
 
     // Try track the face in the current frame
-    faceTracker->Track(colorImage, depthRaw);
+    faceTracker.Track(colorImage, depthRaw);
 
     // Custom processing on frame
     Process();
@@ -339,16 +343,16 @@ void Application::Process() {
 
     // Get face bounds
     // NOTE: rect is guaranteed to be within image bounds
-    RECT rect = faceTracker->faceRect;
+    RECT rect = faceTracker.faceRect;
     face_size = cv::Size(rect.right - rect.left, rect.bottom - rect.top);
     face_offset = cv::Point(rect.left, rect.top);
     face_center = cv::Point(face_offset.x + face_size.width / 2, face_offset.y + face_size.height / 2);
 }
 
 void Application::TrackFace() {
-   //faceTracker->Track(rgbImage, depthImage);
+   //faceTracker.Track(rgbImage, depthImage);
 
-   //trackReliability.AddSample(faceTracker->isTracked);
+   //trackReliability.AddSample(faceTracker.isTracked);
 }
 
 void Application::DrawVideo(RenderTarget* target) {
@@ -380,13 +384,12 @@ void Application::Draw3D(RenderTarget* target) {
     glLoadIdentity();
     glFrustum(-aspectRatio, aspectRatio, -1.f, 1.f, 1.f, 500.f);
 
-    //glMatrixMode(GL_MODELVIEW);  // Why doesn't the following show when I enable this?
+    glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    //glTranslatef(0.f, 0.f, 10.0f);
-    glScalef(0.1f, 0.1f, 0.1f);
-    glRotatef(faceTracker->rotation.x, -1.f,  0.f,  0.f);
-    glRotatef(faceTracker->rotation.y,  0.f, -1.f,  0.f);
-    glRotatef(faceTracker->rotation.z,  0.f,  0.f,  1.f);
+    glTranslatef(0.f, 0.f, -10.0f);
+    glRotatef(faceTracker.rotation.x, -1.f,  0.f,  0.f);
+    glRotatef(faceTracker.rotation.y,  0.f, -1.f,  0.f);
+    glRotatef(faceTracker.rotation.z,  0.f,  0.f,  1.f);
     
     glBegin(GL_LINES);
         glColor3f(1.f, 0.f, 0.f);
@@ -423,19 +426,25 @@ void Application::Draw3D(RenderTarget* target) {
         0.f, 1.f, 0.f);
     glScalef(-1.f, 1.f, 1.f);
 
+    glTranslatef(faceTracker.translation.x, faceTracker.translation.y, faceTracker.translation.z);
+
+    glRotatef(faceTracker.rotation.x, 1.f, 0.f, 0.f);
+    glRotatef(faceTracker.rotation.y, 0.f, 1.f, 0.f);
+    glRotatef(faceTracker.rotation.z, 0.f, 0.f, 1.f);
+
     // Draw textured face
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glColor3f(1.f, 1.f, 1.f);
     sf::Texture::bind(&faceTexture);
-    faceTracker->model.DrawGL();
+    faceTracker.model.DrawGL();
 
     // Draw wireframe face mesh
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glDisable(GL_TEXTURE_2D);
     glColor3f(1.f, 1.f, 1.f);
-    faceTracker->model.DrawGL();
+    faceTracker.model.DrawGL();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
@@ -446,19 +455,19 @@ void Application::DrawOverlay(RenderTarget* target) {
     RectangleShape face_bounds(Vector2f((float)face_size.width, (float)face_size.height));
     face_bounds.move((float)face_offset.x, (float)face_offset.y);
     face_bounds.setFillColor(Color::Transparent);
-    face_bounds.setOutlineColor((faceTracker->isTracked) ? Color::Red : Color(255, 0, 0, 40));
+    face_bounds.setOutlineColor((faceTracker.isTracked) ? Color::Red : Color(255, 0, 0, 40));
     face_bounds.setOutlineThickness(2.5f);
 
-    window->draw(face_bounds);
+    //window->draw(face_bounds);
 
     // Draw face center
     CircleShape dot(3, 8);
     dot.setFillColor(Color::Red);
     dot.move((float)face_center.x, (float)face_center.y);
 
-    target->draw(dot);
+    //target->draw(dot);
 
-    if (faceTracker->isTracked) {
+    if (faceTracker.isTracked) {
 
         // Calculate distance at face center
         raw_depth = depthImage.at<float>(face_center.y, face_center.x);
@@ -531,22 +540,17 @@ void Application::DrawStatus(RenderTarget* target) {
 }
 
 string Application::GetTrackingStatus() {
-    if (faceTracker != nullptr) {
-        if (faceTracker->isTracked) {
-            HRESULT hr = faceTracker->GetTrackStatus();
+    if (faceTracker.isTracked) {
+        HRESULT hr = faceTracker.GetTrackStatus();
 
-            if (FAILED(hr)) {
-                return ft_error("", hr).what();
-            }
-            else {
-                return "Tracking";
-            }
+        if (FAILED(hr)) {
+            return ft_error("", hr).what();
         }
         else {
-            return "No Face Detected";
+            return "Tracking";
         }
     }
     else {
-        return "Uninitialized";
+        return "No Face Detected";
     }
 }

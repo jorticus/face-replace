@@ -67,6 +67,10 @@ ft_error::ft_error(string message, HRESULT hr) : runtime_error(NULL)
 
 FaceTracker::FaceTracker()
 {
+
+}
+
+void FaceTracker::Initialize() {
     isTracked = false;
     hasFace = false;
 
@@ -173,15 +177,14 @@ void FaceTracker::printTrackingState(string message, HRESULT hr) {
 }
 
 FaceTracker::~FaceTracker() {
-    if (pFaceTracker != nullptr)
-        pFaceTracker->Release();
+    Uninitialize();
+}
 
-    if (pColorImage != nullptr)
-        pColorImage->Release();
+#define ReleaseAndNull(v) if (v != nullptr) {v->Release(); v=nullptr;}
 
-    if (pDepthImage != nullptr)
-        pDepthImage->Release();
-
-    if (pFTResult != nullptr)
-        pFTResult->Release();
+void FaceTracker::Uninitialize() {
+    ReleaseAndNull(pFaceTracker);
+    ReleaseAndNull(pColorImage);
+    ReleaseAndNull(pDepthImage);
+    ReleaseAndNull(pFTResult);
 }

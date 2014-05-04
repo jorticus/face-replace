@@ -28,6 +28,9 @@ public:
     FaceTracker();
     ~FaceTracker();
 
+    void Initialize();
+    void Uninitialize();
+
     void Track(cv::Mat colorImage, cv::Mat depthImage);
     HRESULT GetTrackStatus() { return (pFTResult != nullptr) ? pFTResult->GetStatus() : -1; }
 
@@ -41,6 +44,7 @@ public:
     sf::Vector3f    translation;
 
     CustomFaceModel model;
+    //FaceModel       model;
 
 private:
     FT_CAMERA_CONFIG videoConfig, depthConfig;

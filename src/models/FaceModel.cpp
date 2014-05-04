@@ -38,7 +38,9 @@ void FaceModel::UpdateModel(IFTResult* pFTResult, FT_CAMERA_CONFIG* pCameraConfi
     UINT vertexCount = pModel->GetVertexCount();
 
     // Get 3D pose
-    float scale, rotation[3], translation[3];
+    float scale = 1.0f;
+    float rotation[3] = { 0.0f, 0.0f, 0.0f };
+    float translation[3] = { 0.0f, 0.0f, 1.0f };
     pFTResult->Get3DPose(&scale, rotation, translation);
 
     // Get face Action Units (AUs)
@@ -135,6 +137,8 @@ void FaceModel::DrawGL() {
             glVertex3fv(reinterpret_cast<const GLfloat*>(&vertices[tri.k]));
         }
         glEnd();
+
+        //SaveToObjFile("cap\\face.obj");
     }
 }
 

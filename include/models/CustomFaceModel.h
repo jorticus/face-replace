@@ -6,16 +6,22 @@
 
 #include <vector>
 
+#include "eru\Model.h"
+
 class CustomFaceModel : public FaceModel
 {
 public:
     CustomFaceModel();
     ~CustomFaceModel();
 
+    bool LoadMesh(std::string filename);
+
     void Initialize(IFTFaceTracker* pFaceTracker);
     void UpdateModel(IFTResult* pFTResult, FT_CAMERA_CONFIG* pCameraConfig);
 
-    //virtual void DrawGL();
+    virtual void DrawGL();
+
+    eruFace::Model      faceMesh;
 
 private:
     bool                hasModel;

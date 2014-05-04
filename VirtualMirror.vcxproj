@@ -93,6 +93,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\eruFace\Deformation.h" />
+    <ClInclude Include="include\eruFace\eruFace.h" />
+    <ClInclude Include="include\eruFace\Model.h" />
+    <ClInclude Include="include\eruFace\VertexSet.h" />
+    <ClInclude Include="include\eruMath\eruMath.h" />
+    <ClInclude Include="include\eruMath\Matrix.h" />
+    <ClInclude Include="include\eruMath\Vector.h" />
+    <ClInclude Include="include\eru\Model.h" />
+    <ClInclude Include="include\eru\StringStreamUtils.h" />
+    <ClInclude Include="include\eru\VertexSet.h" />
     <ClInclude Include="include\models\CustomFaceModel.h" />
     <ClInclude Include="include\models\FaceModel.h" />
     <ClInclude Include="include\Capture.h" />
@@ -106,8 +116,14 @@
     <ClInclude Include="include\win32\SpinLock.h" />
     <ClInclude Include="include\utils\RunningAverage.h" />
     <ClInclude Include="include\utils\Runnable.h" />
+    <ClInclude Include="include\wfm\WireframeFile.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\eru\eruMath.cpp" />
+    <ClCompile Include="src\eru\Matrix.cpp" />
+    <ClCompile Include="src\eru\Deformation.cpp" />
+    <ClCompile Include="src\eru\Model.cpp" />
+    <ClCompile Include="src\eru\VertexSet.cpp" />
     <ClCompile Include="src\models\CustomFaceModel.cpp" />
     <ClCompile Include="src\models\FaceModel.cpp" />
     <ClCompile Include="src\Capture.cpp" />

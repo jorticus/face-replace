@@ -19,6 +19,9 @@
 #include "utils\FPSCounter.h"
 #include "utils\RunningAverage.h"
 
+//#include "wfm\WireframeFile.h"
+#include "eru\Model.h"
+
 #include "Capture.h"
 
 
@@ -77,7 +80,8 @@ protected:
 
     Capture capture;
 
-    FaceTracker *faceTracker;
+    FaceTracker faceTracker;
+    //eruFace::Model faceMesh;
 
 private:
     sf::Vector2u initialSize;
