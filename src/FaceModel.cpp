@@ -163,6 +163,7 @@ void FaceModel::UpdateModel(IFTResult* pFTResult, FT_CAMERA_CONFIG* pCameraConfi
     UINT auCount;
     if (FAILED(hr = pFTResult->GetAUCoefficients(&pAUs, &auCount)))
         throw ft_error("Error getting head AUs", hr);
+    actionUnits = vector<float>(pAUs, pAUs + auCount);
 
     // Get face shape units (SUs)
     float headScale;
@@ -171,6 +172,7 @@ void FaceModel::UpdateModel(IFTResult* pFTResult, FT_CAMERA_CONFIG* pCameraConfi
     BOOL haveConverged;
     if (FAILED(hr = pFaceTracker->GetShapeUnits(&headScale, &pSUCoefs, &SUCount, &haveConverged)))
         throw ft_error("Error getting head SUs", hr);
+    shapeUnits = vector<float>(pSUCoefs, pSUCoefs + SUCount);
 
     // Allocate 2D points
     /*vertexCount = pModel->GetVertexCount();
@@ -225,14 +227,12 @@ void FaceModel::UpdateModel(IFTResult* pFTResult, FT_CAMERA_CONFIG* pCameraConfi
 }
 
 
-void FaceModel::draw(RenderTarget& target, RenderStates states) const {
+void FaceModel::draw() {
     if (hasModel) {
         //states.transform *= getTransform();
         //target.draw(vertices, vertexCount, sf::Points, states);
 
         glColor3f(1.f, 1.f, 1.f);
-
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         bool auto_uv = true;
 
@@ -270,12 +270,27 @@ void FaceModel::draw(RenderTarget& target, RenderStates states) const {
             glEnd();
         }
 
-        this->SaveToObjFile(std::string("face.obj"));
+
+        // Draw wireframe on top
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glDisable(GL_TEXTURE_2D);
+
+        glBegin(GL_TRIANGLES);
+        for each (auto tri in faces) {
+            glVertex3fv(reinterpret_cast<const GLfloat*>(&vertices[tri.i]));
+            glVertex3fv(reinterpret_cast<const GLfloat*>(&vertices[tri.j]));
+            glVertex3fv(reinterpret_cast<const GLfloat*>(&vertices[tri.k]));
+        }
+        glEnd();
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        //this->SaveToObjFile(std::string("face.obj"));
     }
 }
 
 
-void FaceModel::SaveToObjFile(std::string filename) const {
+void FaceModel::SaveToObjFile(std::string filename)  {
     ofstream file;
     file.open(filename);
     file << "o Kinect_Canidae" << endl;
