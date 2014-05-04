@@ -31,6 +31,8 @@ void CustomFaceModel::UpdateModel(IFTResult* pFTResult, FT_CAMERA_CONFIG* pCamer
 }
 
 void CustomFaceModel::DrawGL() {
+    bool has_texcoords = faceMesh.hasTexCoords();
+
     glPushMatrix();
 
     glBegin(GL_TRIANGLES);
@@ -38,7 +40,14 @@ void CustomFaceModel::DrawGL() {
         auto face = faceMesh.face(f);
         
         for (int v = 0; v < face.nDim(); v++) {
-            auto vertex = faceMesh.vertex(face[v]);
+            int i = face[v];
+
+            if (has_texcoords) {
+                auto uv = faceMesh.texCoord(i);
+                glTexCoord2f(uv[0], uv[1]);
+            }
+
+            auto vertex = faceMesh.vertex(i);
             glVertex3f(vertex[0], vertex[1], vertex[2]);
         }
     }

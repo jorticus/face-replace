@@ -69,8 +69,8 @@ void Application::InitializeResources() {
     //faceTexture.setSmooth(true);
     faceSprite.setTexture(faceTexture);
 
-    if (!faceTracker.model.LoadMesh(resources_dir + "mesh\\candide3_kinect.wfm"))
-        throw runtime_error("Error loading mesh 'candide3_kinect.wfm'");
+    if (!faceTracker.model.LoadMesh(resources_dir + "mesh\\candide3_tex.wfm"))
+        throw runtime_error("Error loading mesh 'candide3_tex.wfm'");
     
     // You can use this to save the candide model as a VRML mesh file
     //if (!faceMesh.write("candide3.wrl"))
@@ -184,7 +184,7 @@ void Application::OnKeyPress(sf::Event e) {
         window->close();
         break;
 
-    case Keyboard::F12:
+    case Keyboard::F11:
         // Save current color/depth streams to disk
         cv::Mat colorTemp;
         cv::cvtColor(colorImage, colorTemp, cv::COLOR_BGR2RGB);
@@ -380,7 +380,7 @@ void Application::Draw3D(RenderTarget* target) {
 
     //// Draw XYZ marker ////
 
-    glMatrixMode(GL_PROJECTION);
+    /*glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glFrustum(-aspectRatio, aspectRatio, -1.f, 1.f, 1.f, 500.f);
 
@@ -403,7 +403,7 @@ void Application::Draw3D(RenderTarget* target) {
         glColor3f(0.f, 0.f, 1.f);
         glVertex3f(0.f, 0.f, 0.f);
         glVertex3f(0.f, 0.f, 1.f);
-    glEnd();
+    glEnd();*/
     
 
     //// Draw face mesh ////
@@ -441,11 +441,11 @@ void Application::Draw3D(RenderTarget* target) {
     faceTracker.model.DrawGL();
 
     // Draw wireframe face mesh
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    /*glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glDisable(GL_TEXTURE_2D);
     glColor3f(1.f, 1.f, 1.f);
     faceTracker.model.DrawGL();
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);*/
 }
 
 void Application::DrawOverlay(RenderTarget* target) {
