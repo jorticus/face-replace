@@ -419,11 +419,20 @@ void Application::Draw3D(RenderTarget* target) {
         0.f, 1.f, 0.f);
     glScalef(-1.f, 1.f, 1.f);
 
+    // Draw textured face
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glColor3f(1.f, 1.f, 1.f);
     sf::Texture::bind(&faceTexture);
-    faceTracker->model.draw();
+    faceTracker->model.DrawGL();
+
+    // Draw wireframe face mesh
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glDisable(GL_TEXTURE_2D);
+    glColor3f(1.f, 1.f, 1.f);
+    faceTracker->model.DrawGL();
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void Application::DrawOverlay(RenderTarget* target) {
