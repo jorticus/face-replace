@@ -525,12 +525,13 @@ Model::read(const std::string& fname)
 	bool success;
 
 	char oldPath[_MAX_PATH];
-    std::string newPath = eru::getFilePath(fname);
-	_getcwd(oldPath, _MAX_PATH);
-	_chdir(newPath.c_str());
+    std::string newPath = fname;// eru::getFilePath(fname);
+	//_getcwd(oldPath, _MAX_PATH);
+	//_chdir(newPath.c_str());
 	std::string simplefilename = eru::getSimpleFileName(fname);
     std::string ext = eru::getLowerCaseFileExtension(fname);
-	std::ifstream is(simplefilename.c_str());
+	//std::ifstream is(simplefilename.c_str());
+    std::ifstream is(fname);
 
 	if (!is.is_open())
     {
