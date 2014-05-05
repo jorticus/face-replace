@@ -29,8 +29,8 @@ class Application
 {
     // Configuration
     const std::string title = "Virtual Mirror";
-    const int width = 640*2;
-    const int height = 480+128;
+    //const int width = 640*2;
+    //const int height = 480+128;
     const int fullscreen = false;    // NOTE: if fullscreen is true, width/height are ignored and the native screen resolution is used instead.
 
     const std::string resources_dir = "resources\\";
@@ -41,7 +41,10 @@ class Application
 
     const int depth_threshold = 2400; //mm
 
-    const bool ssfx_enabled = false;  // Screen-space effects
+    const bool ssfx_enabled = false;    // Screen-space effects
+
+    const bool advanced_view = false;   // If true, show depth video and other information
+    const bool show_status = true;     // If true, show status information such as FPS
 
 public:
     std::vector<std::wstring> args;

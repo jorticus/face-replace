@@ -69,8 +69,8 @@ void Application::InitializeResources() {
     //faceTexture.setSmooth(true);
     faceSprite.setTexture(faceTexture);
 
-    if (!faceTracker.model.LoadMesh(resources_dir + "mesh\\candide3_tex.wfm"))
-        throw runtime_error("Error loading mesh 'candide3_tex.wfm'");
+    if (!faceTracker.model.LoadMesh(resources_dir + "faces\\candide3_kinect.wfm"))
+        throw runtime_error("Error loading mesh 'candide3_kinect.wfm'");
     
     // You can use this to save the candide model as a VRML mesh file
     //if (!faceMesh.write("candide3.wrl"))
@@ -94,8 +94,11 @@ void Application::InitializeWindow() {
         this->window = new RenderWindow(modes[0], this->title, Style::Fullscreen, settings);
     }
     else {
+        int width = (advanced_view) ? 1280.f : 640.f;
+        int height = (advanced_view) ? (480.f + 128.f) : 480.f;
+
         // Otherwise use the specified width/height to create a windowed window
-        window = new RenderWindow(sf::VideoMode(this->width, this->height), this->title, Style::Default, settings);
+        window = new RenderWindow(sf::VideoMode(width, height), this->title, Style::Default, settings);
     }
 
     window->setVerticalSyncEnabled(true);
@@ -112,14 +115,21 @@ void Application::Initialize3D() {
     //glDepthMask(GL_TRUE);
     //glClearDepth(1.0f);
 
+
     // Configure viewport (clipped to within the color video stream)
-    Vector2f scale(
-        static_cast<float>(window->getSize().x) / static_cast<float>(initialSize.x),
-        static_cast<float>(window->getSize().y)  / static_cast<float>(initialSize.y)
-     );
-    glViewport(
-        0, static_cast<GLint>(scale.y * (initialSize.y - 480.0f)), 
-        static_cast<GLsizei>(scale.x * 640.0f), static_cast<GLsizei>(scale.y * 480.0f));
+    if (advanced_view) {
+        Vector2f scale(
+            static_cast<float>(window->getSize().x) / static_cast<float>(initialSize.x),
+            static_cast<float>(window->getSize().y) / static_cast<float>(initialSize.y)
+            );
+
+        glViewport(
+            0, static_cast<GLint>(scale.y * (initialSize.y - 480.0f)),
+            static_cast<GLsizei>(scale.x * 640.0f), static_cast<GLsizei>(scale.y * 480.0f));
+    }
+    else {
+        glViewport(0.f, 0.f, window->getSize().x, window->getSize().y);
+    }
 
     //aspectRatio = static_cast<float>(window->getSize().x) / window->getSize().y;
     aspectRatio = 640.0f / 480.0f;
@@ -261,7 +271,9 @@ void Application::Draw() {
     }
 
     // Draw status information on top (not affected by the shader)
-    DrawStatus(window);
+    if (show_status) {
+        DrawStatus(window);
+    }
 
     target->popGLStates();
 
@@ -358,18 +370,18 @@ void Application::TrackFace() {
 void Application::DrawVideo(RenderTarget* target) {
     // Draw rgb and depth textures to the window
     Vector2f rgbLocation(0, 0);
-    Vector2f depthLocation(
-        static_cast<float>(colorImage.cols), 
-        static_cast<float>((colorImage.rows - depthImage.rows) / 2));
-
     Sprite rgbSprite(colorTexture);
-    Sprite depthSprite(depthTexture);
-
     rgbSprite.move(rgbLocation);
-    depthSprite.move(depthLocation);
-
     target->draw(rgbSprite);
-    target->draw(depthSprite);
+
+    if (advanced_view) {
+        Vector2f depthLocation(
+            static_cast<float>(colorImage.cols),
+            static_cast<float>((colorImage.rows - depthImage.rows) / 2));
+        Sprite depthSprite(depthTexture);
+        depthSprite.move(depthLocation);
+        target->draw(depthSprite);
+    }
 }
 
 void Application::Draw3D(RenderTarget* target) {
