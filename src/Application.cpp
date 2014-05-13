@@ -454,6 +454,7 @@ void Application::Draw3D(RenderTarget* target) {
 
         blendShader.setParameter("overlayTexture", faceTexture);
         blendShader.setParameter("backgroundTexture", colorTexture);
+        blendShader.setParameter("lumaCorrect", sf::Vector2f(0.0f, 1.5f)); // TODO: Automatically calculate from the video stream
        
         //sf::Texture::bind(&faceTexture);
         sf::Shader::bind(&blendShader);
