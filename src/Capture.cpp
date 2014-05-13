@@ -5,7 +5,8 @@
 using namespace std;
 using namespace openni;
 
-Capture::Capture()
+Capture::Capture():
+fpsCounter(8)
 {
 
 }

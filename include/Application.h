@@ -105,14 +105,7 @@ private:
     sf::Texture depthTexture;
     sf::Texture colorTexture;
 
-
-    
-    //void SegmentBackground();
-    void TrackFace();
-
     std::string GetTrackingStatus();
-
-    //openni::VideoStream* oniStreams[2];
 
     float raw_depth;
 

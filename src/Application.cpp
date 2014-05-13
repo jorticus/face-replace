@@ -25,7 +25,7 @@ private:
 };*/
 
 Application::Application(int argc, _TCHAR* argv[]) :
-fpsCounter(32),
+fpsCounter(8),
 trackReliability(128),
 window(nullptr)
 {
@@ -361,19 +361,14 @@ void Application::Process() {
     face_center = cv::Point(face_offset.x + face_size.width / 2, face_offset.y + face_size.height / 2);
 }
 
-void Application::TrackFace() {
-   //faceTracker.Track(rgbImage, depthImage);
-
-   //trackReliability.AddSample(faceTracker.isTracked);
-}
-
 void Application::DrawVideo(RenderTarget* target) {
-    // Draw rgb and depth textures to the window
+    // Draw rgb texture to the window
     Vector2f rgbLocation(0, 0);
     Sprite rgbSprite(colorTexture);
     rgbSprite.move(rgbLocation);
     target->draw(rgbSprite);
 
+    // In advanced view, draw the depth stream too
     if (advanced_view) {
         Vector2f depthLocation(
             static_cast<float>(colorImage.cols),
@@ -420,71 +415,73 @@ void Application::Draw3D(RenderTarget* target) {
 
     //// Draw face mesh ////
 
-    glClear(GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
+    if (faceTracker.isTracked) {
 
-    // Set up perspective projection
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    
-    // Set up the correct perspective projection matrix for the kinect
-    gluPerspective(NUI_CAMERA_COLOR_NOMINAL_VERTICAL_FOV, 4.f/3.f, 0.1f, 10.0f);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt(
-        0.f, 0.f, 0.f,
-        0.f, 0.f, 1.f,
-        0.f, 1.f, 0.f);
-    glScalef(-1.f, 1.f, 1.f);
+        // Set up perspective projection
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
 
-    glTranslatef(faceTracker.translation.x, faceTracker.translation.y, faceTracker.translation.z);
+        // Set up the correct perspective projection matrix for the kinect
+        gluPerspective(NUI_CAMERA_COLOR_NOMINAL_VERTICAL_FOV, 4.f / 3.f, 0.1f, 10.0f);
 
-    glRotatef(faceTracker.rotation.x, 1.f, 0.f, 0.f);
-    glRotatef(faceTracker.rotation.y, 0.f, 1.f, 0.f);
-    glRotatef(faceTracker.rotation.z, 0.f, 0.f, 1.f);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        gluLookAt(
+            0.f, 0.f, 0.f,
+            0.f, 0.f, 1.f,
+            0.f, 1.f, 0.f);
+        glScalef(-1.f, 1.f, 1.f);
 
-    // Draw textured face
-    glEnable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glColor3f(1.f, 1.f, 1.f);
-    sf::Texture::bind(&faceTexture);
-    faceTracker.model.DrawGL();
+        glTranslatef(faceTracker.translation.x, faceTracker.translation.y, faceTracker.translation.z);
 
-    // Draw wireframe face mesh
-    /*glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glDisable(GL_TEXTURE_2D);
-    glColor3f(1.f, 1.f, 1.f);
-    faceTracker.model.DrawGL();
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);*/
+        glRotatef(faceTracker.rotation.x, 1.f, 0.f, 0.f);
+        glRotatef(faceTracker.rotation.y, 0.f, 1.f, 0.f);
+        glRotatef(faceTracker.rotation.z, 0.f, 0.f, 1.f);
+
+        // Draw textured face
+        glEnable(GL_TEXTURE_2D);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glColor3f(1.f, 1.f, 1.f);
+        sf::Texture::bind(&faceTexture);
+        faceTracker.model.DrawGL();
+
+        // Draw wireframe face mesh
+        /*glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glDisable(GL_TEXTURE_2D);
+        glColor3f(1.f, 1.f, 1.f);
+        faceTracker.model.DrawGL();
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);*/
+
+    }
 }
 
 void Application::DrawOverlay(RenderTarget* target) {
     raw_depth = NAN;
 
     // Draw face bounds
-    RectangleShape face_bounds(Vector2f((float)face_size.width, (float)face_size.height));
+    /*RectangleShape face_bounds(Vector2f((float)face_size.width, (float)face_size.height));
     face_bounds.move((float)face_offset.x, (float)face_offset.y);
     face_bounds.setFillColor(Color::Transparent);
     face_bounds.setOutlineColor((faceTracker.isTracked) ? Color::Red : Color(255, 0, 0, 40));
     face_bounds.setOutlineThickness(2.5f);
 
-    //window->draw(face_bounds);
+    window->draw(face_bounds);*/
 
     // Draw face center
-    CircleShape dot(3, 8);
+    /*CircleShape dot(3, 8);
     dot.setFillColor(Color::Red);
     dot.move((float)face_center.x, (float)face_center.y);
 
-    //target->draw(dot);
+    target->draw(dot);*/
 
     if (faceTracker.isTracked) {
 
         // Calculate distance at face center
         raw_depth = depthImage.at<float>(face_center.y, face_center.x);
-
-
         if (face_size.width > 0 && face_size.height > 0) {
             // Capture face texture
             faceImage = colorImage(cv::Rect(face_offset, face_size)).clone();
@@ -512,13 +509,13 @@ void Application::DrawOverlay(RenderTarget* target) {
 
 
         // Update face overlay
-        auto src_size = faceTexture.getSize();
+        /*auto src_size = faceTexture.getSize();
         auto dest_size = sf::Vector2f((float)face_size.width, (float)face_size.height);
         sf::Vector2f face_scale(dest_size.x / src_size.x, dest_size.y / src_size.y);
         faceSprite.setScale(face_scale);
         faceSprite.setPosition((float)face_offset.x, (float)face_offset.y);
 
-        //target->draw(faceSprite);
+        target->draw(faceSprite);*/
     }
 }
 
