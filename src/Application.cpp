@@ -54,6 +54,7 @@ void Application::InitializeResources() {
     if (!font.loadFromFile(resources_dir + this->default_font_file))
         throw runtime_error("Could not load font \"" + default_font_file + "\"");
 
+
     // Load shaders
     if (!outlineShader.loadFromFile(resources_dir + "shaders\\outline-shader.frag", Shader::Type::Fragment))
         throw runtime_error("Could not load shader \"outline-shader.frag\"");
@@ -61,10 +62,11 @@ void Application::InitializeResources() {
     outlineShader.setParameter("outlineColor", Color::Black);
     outlineShader.setParameter("outlineWidth", 0.008f);
 
-    pixelateShader.loadFromFile(resources_dir + "shaders\\pixelate.frag", Shader::Type::Fragment);
-    pixelateShader.setParameter("pixel_threshold", 0.1f);
+    if (!blendShader.loadFromFile(resources_dir + "shaders\\face-blend.frag", Shader::Type::Fragment))
+        throw runtime_error("Could not laod shader \"face-blend.frag\"");
+
     
-    cout << "Loading faces" << endl;
+    cout << "Loading face model" << endl;
     faceTexture.loadFromFile(resources_dir + "faces\\gaben.png");
     //faceTexture.setSmooth(true);
     faceSprite.setTexture(faceTexture);
@@ -266,8 +268,11 @@ void Application::Draw() {
     if (ssfx_enabled) {
         tex.display();  // Required
 
-        pixelateShader.setParameter("pixel_threshold", 0.001f);
-        window->draw(sf::Sprite(tex.getTexture()), &pixelateShader);
+        // Apply screen-space shaders here if required
+
+        //pixelateShader.setParameter("pixel_threshold", 0.001f);
+        //window->draw(sf::Sprite(tex.getTexture()), &pixelateShader);
+        window->draw(sf::Sprite(tex.getTexture()));
     }
 
     // Draw status information on top (not affected by the shader)
@@ -384,6 +389,7 @@ void Application::Draw3D(RenderTarget* target) {
     glDisable(GL_LIGHTING);
     glDisable(GL_DEPTH_TEST);
 
+    blendShader.setParameter("iResolution", sf::Vector2f(window->getSize()));
 
     //// Draw XYZ marker ////
 
@@ -416,7 +422,6 @@ void Application::Draw3D(RenderTarget* target) {
     //// Draw face mesh ////
 
     if (faceTracker.isTracked) {
-
         glClear(GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
@@ -446,16 +451,26 @@ void Application::Draw3D(RenderTarget* target) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glColor3f(1.f, 1.f, 1.f);
-        sf::Texture::bind(&faceTexture);
+
+        blendShader.setParameter("overlayTexture", faceTexture);
+        blendShader.setParameter("backgroundTexture", colorTexture);
+       
+        //sf::Texture::bind(&faceTexture);
+        sf::Shader::bind(&blendShader);
+
         faceTracker.model.DrawGL();
+
+        sf::Texture::bind(NULL);
+        sf::Shader::bind(NULL);
 
         // Draw wireframe face mesh
-        /*glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glDisable(GL_TEXTURE_2D);
-        glColor3f(1.f, 1.f, 1.f);
-        faceTracker.model.DrawGL();
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);*/
-
+        if (draw_face_wireframe) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glDisable(GL_TEXTURE_2D);
+            glColor3f(1.f, 1.f, 1.f);
+            faceTracker.model.DrawGL();
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
     }
 }
 
@@ -486,7 +501,7 @@ void Application::DrawOverlay(RenderTarget* target) {
             // Capture face texture
             faceImage = colorImage(cv::Rect(face_offset, face_size)).clone();
 
-            Texture boxedFaceTexture;
+            /*Texture boxedFaceTexture;
             cv::cvtColor(faceImage, faceImage, cv::COLOR_BGR2BGRA);
             boxedFaceTexture.create(faceImage.cols, faceImage.rows);
             boxedFaceTexture.update(faceImage.data, faceImage.cols, faceImage.rows, 0, 0);
@@ -494,7 +509,7 @@ void Application::DrawOverlay(RenderTarget* target) {
             // Draw captured face
             Sprite boxedFaceSprite(boxedFaceTexture);
             boxedFaceSprite.move(8.f, 480.f + 64.f - static_cast<float>(face_size.height) / 2.f);
-            target->draw(boxedFaceSprite);
+            target->draw(boxedFaceSprite);*/
         }
 
         //cout <<

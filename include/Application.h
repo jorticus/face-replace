@@ -45,6 +45,7 @@ class Application
 
     const bool advanced_view = false;   // If true, show depth video and other information
     const bool show_status = true;     // If true, show status information such as FPS
+    const bool draw_face_wireframe = false;
 
 public:
     std::vector<std::wstring> args;
@@ -94,7 +95,7 @@ private:
     RunningAverage<unsigned int> trackReliability;
 
     sf::Shader outlineShader;
-    sf::Shader pixelateShader;
+    sf::Shader blendShader;
 
     sf::Font fps_font;
     sf::Font font;
