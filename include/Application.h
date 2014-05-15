@@ -88,6 +88,9 @@ protected:
     //eruFace::Model faceMesh;
 
 private:
+    sf::Vector2f AnalyzeLevels(cv::Mat image);
+    sf::Vector2f levelCorrection;
+
     sf::Vector2u initialSize;
     GLfloat aspectRatio;
 

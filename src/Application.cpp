@@ -27,7 +27,8 @@ private:
 Application::Application(int argc, _TCHAR* argv[]) :
 fpsCounter(8),
 trackReliability(128),
-window(nullptr)
+window(nullptr),
+levelCorrection(0.0, 1.0)
 {
     // Convert command-line arguments to std::vector
     for (int i = 0; i < argc; i++)
@@ -452,9 +453,17 @@ void Application::Draw3D(RenderTarget* target) {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glColor3f(1.f, 1.f, 1.f);
 
+        // Capture face texture and analyze luminance levels
+        if (face_size.width > 0 && face_size.height > 0) {
+            faceImage = colorImage(cv::Rect(face_offset, face_size)).clone();
+            levelCorrection = AnalyzeLevels(faceImage);
+
+            //TODO: Limit histogram analysis to face-coloured pixels
+        }
+
         blendShader.setParameter("overlayTexture", faceTexture);
         blendShader.setParameter("backgroundTexture", colorTexture);
-        blendShader.setParameter("lumaCorrect", sf::Vector2f(0.0f, 1.5f)); // TODO: Automatically calculate from the video stream
+        blendShader.setParameter("lumaCorrect", levelCorrection);
        
         //sf::Texture::bind(&faceTexture);
         sf::Shader::bind(&blendShader);
@@ -498,11 +507,12 @@ void Application::DrawOverlay(RenderTarget* target) {
 
         // Calculate distance at face center
         raw_depth = depthImage.at<float>(face_center.y, face_center.x);
-        if (face_size.width > 0 && face_size.height > 0) {
-            // Capture face texture
+
+        // Capture face texture
+        /*if (face_size.width > 0 && face_size.height > 0) {
             faceImage = colorImage(cv::Rect(face_offset, face_size)).clone();
 
-            /*Texture boxedFaceTexture;
+            Texture boxedFaceTexture;
             cv::cvtColor(faceImage, faceImage, cv::COLOR_BGR2BGRA);
             boxedFaceTexture.create(faceImage.cols, faceImage.rows);
             boxedFaceTexture.update(faceImage.data, faceImage.cols, faceImage.rows, 0, 0);
@@ -510,8 +520,8 @@ void Application::DrawOverlay(RenderTarget* target) {
             // Draw captured face
             Sprite boxedFaceSprite(boxedFaceTexture);
             boxedFaceSprite.move(8.f, 480.f + 64.f - static_cast<float>(face_size.height) / 2.f);
-            target->draw(boxedFaceSprite);*/
-        }
+            target->draw(boxedFaceSprite);
+        }*/
 
         //cout <<
         //    faceTracker->translation.x << ", " <<
@@ -578,4 +588,47 @@ string Application::GetTrackingStatus() {
     else {
         return "No Face Detected";
     }
+}
+
+Vector2f Application::AnalyzeLevels(cv::Mat image) {
+    // Convert to luminance. Do not use HSB/HSV, as B/V doesn't correspond to actual luminance!
+    // Y' = 0.299*R + 0.587*G + 0.144*B
+    cv::cvtColor(faceImage, faceImage, cv::COLOR_BGR2GRAY);
+
+    // Calculate luminance histogram
+    cv::MatND hist;
+    int histSize = 256;
+    float range[] = { 0, 255 };
+    const float* ranges = { range };
+    cv::calcHist(&faceImage, 1, 0, cv::Mat(), hist, 1, &histSize, &ranges, true, false);
+
+    // Calculate total sum of pixel counts
+    double sum = 0.0;
+    for (int i = 0; i < histSize; i++) {
+        sum += hist.at<float>(i);
+    }
+
+    // Find the maximum and minimum luminance of the video
+    double csum = 0.0;
+    double sum_a = sum * 0.01;  // 1% and 99% thresholds are used to find the minimum/maximum luminance,
+    double sum_b = sum * 0.99;  // while providing some allowance for a few completely white/black pixels (which don't really contribute to the min/max brightness).
+    int p_a = 0;
+    int p_b = histSize - 1;
+    for (int i = 0; i < histSize; i++) {
+        csum += hist.at<float>(i);
+        if (csum < sum_a)
+            p_a = i;
+        else if (csum < sum_b)
+            p_b = i;
+    }
+    // 0 <= p_a < p_b <= 255 guaranteed.
+
+    // Convert to values suitable for the shader
+    // NOTE: Shader assumes the provided overlay face texture is normalized
+    double l_a = 0.0;
+    double l_b = 1.0;
+    l_a = (static_cast<float>(p_a) / 255.0);
+    l_b = 1.0 / (static_cast<float>(p_b) / 255.0);
+
+    return Vector2f(l_a, l_b);
 }
