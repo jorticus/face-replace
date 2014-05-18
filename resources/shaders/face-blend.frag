@@ -62,7 +62,10 @@ void main()
 
     // Convert back to RGBA colour space (Alpha channel from the overlay texture)
     vec3 blend_rgb = blend_yuv * yuv2rgb;
-	gl_FragColor = vec4(blend_rgb, fg_color.a);
+	//gl_FragColor = vec4(blend_rgb, fg_color.a);
+
+    // Work-around for an alpha-blending bug in SFML when drawing to a texture instead of the screen
+    gl_FragColor = vec4((blend_rgb * fg_color.a) + (bg_color.rgb * (1.0-fg_color.a)), 1.0);
 }
 
 
