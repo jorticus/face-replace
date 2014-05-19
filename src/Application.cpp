@@ -302,8 +302,8 @@ void Application::Process() {
     cv::bitwise_and(mask_segment, mask_valid, depth_mask);
     depth_mask.convertTo(depth_mask, CV_8U);
 
-    cv::Mat kernel(3, 3, CV_8U, cv::Scalar(1));
-    cv::morphologyEx(depth_mask, depth_mask, cv::MORPH_OPEN, kernel);
+    //cv::Mat kernel(3, 3, CV_8U, cv::Scalar(1));
+    //cv::morphologyEx(depth_mask, depth_mask, cv::MORPH_OPEN, kernel);
 
 
     //cv::InputArray kernel(new int[] = { 1, 2 });
