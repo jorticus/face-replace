@@ -72,8 +72,8 @@ void Application::InitializeResources() {
     //faceTexture.setSmooth(true);
     faceSprite.setTexture(faceTexture);
 
-    if (!faceTracker.model.LoadMesh(resources_dir + "faces\\candide3_kinect.wfm"))
-        throw runtime_error("Error loading mesh 'candide3_kinect.wfm'");
+    if (!faceTracker.model.LoadMesh(resources_dir + "faces\\candide3_textured.wfm"))
+        throw runtime_error("Error loading mesh 'candide3_textured.wfm'");
     
     // You can use this to save the candide model as a VRML mesh file
     //if (!faceMesh.write("candide3.wrl"))
