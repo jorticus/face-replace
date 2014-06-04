@@ -529,9 +529,9 @@ void Application::DrawOverlay(RenderTarget* target) {
         //    faceTracker->translation.z << endl;
 
         //cout <<
-        //    faceTracker->rotation.x << ", " <<
-        //    faceTracker->rotation.y << ", " <<
-        //    faceTracker->rotation.z << endl;
+        //    faceTracker.rotation.x << ", " <<
+        //    faceTracker.rotation.y << ", " <<
+        //    faceTracker.rotation.z << endl;
 
 
         // Update face overlay

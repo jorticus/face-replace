@@ -1,8 +1,0 @@
-This project is setup to use Visual Studio's .prop files for including the required libraries (kinect, opencv, etc.)
-If you don't know what this is, you should google it because it's a very flexible way of specifying the libraries required.
-
-You will not be able to build my project without setting these libraries up, but for your convenience, I have provided the .prop files
-which can be modified with a text editor.
-
-TODO: Copy used .props files to the project folder
-TODO: List all libraries used (and also versions)
