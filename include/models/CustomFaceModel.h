@@ -22,7 +22,7 @@ public:
 
     virtual void DrawGL();
 
-    eruFace::Model      faceMesh;
+    eruFace::Model      mesh;
     sf::Texture         texture;
 
 private:

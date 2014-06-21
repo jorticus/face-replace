@@ -160,7 +160,7 @@ namespace eruFace
             double        _vportWidth;
             double        _vportHeight;
 
-        public:
+        protected:
             void createTransform();
 
 	        // Internal File & stream I/O
