@@ -68,10 +68,6 @@ void Application::InitializeResources() {
 
     
     cout << "Loading face model" << endl;
-    faceTexture.loadFromFile(resources_dir + "faces\\gaben.png");
-    //faceTexture.setSmooth(true);
-    faceSprite.setTexture(faceTexture);
-
     if (!faceTracker.model.LoadMesh(resources_dir + "faces\\candide3_textured.wfm"))
         throw runtime_error("Error loading mesh 'candide3_textured.wfm'");
     
@@ -255,9 +251,6 @@ void Application::Draw() {
     target->pushGLStates();
     DrawVideo(target);
 
-    // Draw 2D overlays
-    DrawOverlay(target);
-
     // Draw 3D geometry
     target->popGLStates();
     Draw3D(target);
@@ -365,6 +358,15 @@ void Application::Process() {
     face_size = cv::Size(rect.right - rect.left, rect.bottom - rect.top);
     face_offset = cv::Point(rect.left, rect.top);
     face_center = cv::Point(face_offset.x + face_size.width / 2, face_offset.y + face_size.height / 2);
+
+    if (faceTracker.isTracked) {
+
+        // Calculate distance at face center
+        raw_depth = depthImage.at<float>(face_center.y, face_center.x);
+    }
+    else {
+        raw_depth = NAN;
+    }
 }
 
 void Application::DrawVideo(RenderTarget* target) {
@@ -461,11 +463,11 @@ void Application::Draw3D(RenderTarget* target) {
             //TODO: Limit histogram analysis to face-coloured pixels
         }
 
-        blendShader.setParameter("overlayTexture", faceTexture);
+        blendShader.setParameter("overlayTexture", faceTracker.model.texture);
         blendShader.setParameter("backgroundTexture", colorTexture);
         blendShader.setParameter("lumaCorrect", levelCorrection);
        
-        //sf::Texture::bind(&faceTexture);
+        //sf::Texture::bind(&faceTracker.model.texture);
         sf::Shader::bind(&blendShader);
 
         faceTracker.model.DrawGL();
@@ -481,67 +483,6 @@ void Application::Draw3D(RenderTarget* target) {
             faceTracker.model.DrawGL();
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
-    }
-}
-
-void Application::DrawOverlay(RenderTarget* target) {
-    raw_depth = NAN;
-
-    // Draw face bounds
-    /*RectangleShape face_bounds(Vector2f((float)face_size.width, (float)face_size.height));
-    face_bounds.move((float)face_offset.x, (float)face_offset.y);
-    face_bounds.setFillColor(Color::Transparent);
-    face_bounds.setOutlineColor((faceTracker.isTracked) ? Color::Red : Color(255, 0, 0, 40));
-    face_bounds.setOutlineThickness(2.5f);
-
-    window->draw(face_bounds);*/
-
-    // Draw face center
-    /*CircleShape dot(3, 8);
-    dot.setFillColor(Color::Red);
-    dot.move((float)face_center.x, (float)face_center.y);
-
-    target->draw(dot);*/
-
-    if (faceTracker.isTracked) {
-
-        // Calculate distance at face center
-        raw_depth = depthImage.at<float>(face_center.y, face_center.x);
-
-        // Capture face texture
-        /*if (face_size.width > 0 && face_size.height > 0) {
-            faceImage = colorImage(cv::Rect(face_offset, face_size)).clone();
-
-            Texture boxedFaceTexture;
-            cv::cvtColor(faceImage, faceImage, cv::COLOR_BGR2BGRA);
-            boxedFaceTexture.create(faceImage.cols, faceImage.rows);
-            boxedFaceTexture.update(faceImage.data, faceImage.cols, faceImage.rows, 0, 0);
-
-            // Draw captured face
-            Sprite boxedFaceSprite(boxedFaceTexture);
-            boxedFaceSprite.move(8.f, 480.f + 64.f - static_cast<float>(face_size.height) / 2.f);
-            target->draw(boxedFaceSprite);
-        }*/
-
-        //cout <<
-        //    faceTracker->translation.x << ", " <<
-        //    faceTracker->translation.y << ", " <<
-        //    faceTracker->translation.z << endl;
-
-        //cout <<
-        //    faceTracker.rotation.x << ", " <<
-        //    faceTracker.rotation.y << ", " <<
-        //    faceTracker.rotation.z << endl;
-
-
-        // Update face overlay
-        /*auto src_size = faceTexture.getSize();
-        auto dest_size = sf::Vector2f((float)face_size.width, (float)face_size.height);
-        sf::Vector2f face_scale(dest_size.x / src_size.x, dest_size.y / src_size.y);
-        faceSprite.setScale(face_scale);
-        faceSprite.setPosition((float)face_offset.x, (float)face_offset.y);
-
-        target->draw(faceSprite);*/
     }
 }
 

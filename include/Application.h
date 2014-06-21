@@ -14,7 +14,6 @@
 //#include <kinect\nui\ImageFrame.h>
 
 #include "FaceTracker.h"
-//#include "HeadTracker.h"
 
 #include "utils\FPSCounter.h"
 #include "utils\RunningAverage.h"
@@ -85,7 +84,6 @@ protected:
     Capture capture;
 
     FaceTracker faceTracker;
-    //eruFace::Model faceMesh;
 
 private:
     sf::Vector2f AnalyzeLevels(cv::Mat image);
@@ -102,9 +100,6 @@ private:
 
     sf::Font fps_font;
     sf::Font font;
-
-    sf::Texture faceTexture;
-    sf::Sprite faceSprite;
 
     sf::Texture depthTexture;
     sf::Texture colorTexture;

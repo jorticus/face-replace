@@ -1,8 +1,11 @@
 
+#include <boost\format.hpp>
 #include "FaceTracker.h"
 #include "models\CustomFaceModel.h"
 
 #include <SFML\OpenGL.hpp>
+
+using namespace std;
 
 CustomFaceModel::CustomFaceModel() : FaceModel()
 {
@@ -15,7 +18,17 @@ CustomFaceModel::~CustomFaceModel()
 
 bool CustomFaceModel::LoadMesh(std::string filename) {
     // Load the face mesh from a .wfm file (eg. candide3.wfm)
-    return faceMesh.read(filename);
+    if (!faceMesh.read(filename))
+        return false;
+
+    // Load the texture if defined
+    if (!faceMesh._texFilename.empty()) {
+        if (!texture.loadFromFile(faceMesh._texFilename)) {
+            throw runtime_error((boost::format("Error loading face mesh texture '%s'") % faceMesh._texFilename).str());
+        }
+    }
+
+    return true;
 }
 
 void CustomFaceModel::Initialize(IFTFaceTracker* pFaceTracker) {

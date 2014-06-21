@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "eru\Model.h"
+#include <SFML\Graphics.hpp>
 
 class CustomFaceModel : public FaceModel
 {
@@ -22,6 +23,7 @@ public:
     virtual void DrawGL();
 
     eruFace::Model      faceMesh;
+    sf::Texture         texture;
 
 private:
     bool                hasModel;
