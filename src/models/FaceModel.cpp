@@ -31,6 +31,7 @@ void FaceModel::Initialize(IFTFaceTracker* pFaceTracker) {
 
 void FaceModel::UpdateModel(IFTResult* pFTResult, FT_CAMERA_CONFIG* pCameraConfig) {
     HRESULT hr;
+    hasModel = false;
 
     if (pModel == nullptr)
         throw std::runtime_error("Face model not initialized");

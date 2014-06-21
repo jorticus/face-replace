@@ -93,8 +93,8 @@ void Application::InitializeWindow() {
         this->window = new RenderWindow(modes[0], this->title, Style::Fullscreen, settings);
     }
     else {
-        int width = (advanced_view) ? 1280.f : 640.f;
-        int height = (advanced_view) ? (480.f + 128.f) : 480.f;
+        int width = (advanced_view) ? 1280 : 640;
+        int height = (advanced_view) ? (480 + 128) : 480;
 
         // Otherwise use the specified width/height to create a windowed window
         window = new RenderWindow(sf::VideoMode(width, height), this->title, Style::Default, settings);
@@ -127,7 +127,7 @@ void Application::Initialize3D() {
             static_cast<GLsizei>(scale.x * 640.0f), static_cast<GLsizei>(scale.y * 480.0f));
     }
     else {
-        glViewport(0.f, 0.f, window->getSize().x, window->getSize().y);
+        glViewport(0, 0, window->getSize().x, window->getSize().y);
     }
 
     //aspectRatio = static_cast<float>(window->getSize().x) / window->getSize().y;
@@ -544,15 +544,15 @@ Vector2f Application::AnalyzeLevels(cv::Mat image) {
     cv::calcHist(&faceImage, 1, 0, cv::Mat(), hist, 1, &histSize, &ranges, true, false);
 
     // Calculate total sum of pixel counts
-    double sum = 0.0;
+    float sum = 0.0f;
     for (int i = 0; i < histSize; i++) {
         sum += hist.at<float>(i);
     }
 
     // Find the maximum and minimum luminance of the video
-    double csum = 0.0;
-    double sum_a = sum * 0.01;  // 1% and 99% thresholds are used to find the minimum/maximum luminance,
-    double sum_b = sum * 0.99;  // while providing some allowance for a few completely white/black pixels (which don't really contribute to the min/max brightness).
+    float csum = 0.0;
+    float sum_a = sum * 0.01f;  // 1% and 99% thresholds are used to find the minimum/maximum luminance,
+    float sum_b = sum * 0.99f;  // while providing some allowance for a few completely white/black pixels (which don't really contribute to the min/max brightness).
     int p_a = 0;
     int p_b = histSize - 1;
     for (int i = 0; i < histSize; i++) {
@@ -566,10 +566,10 @@ Vector2f Application::AnalyzeLevels(cv::Mat image) {
 
     // Convert to values suitable for the shader
     // NOTE: Shader assumes the provided overlay face texture is normalized
-    double l_a = 0.0;
-    double l_b = 1.0;
-    l_a = (static_cast<float>(p_a) / 255.0);
-    l_b = 1.0 / (static_cast<float>(p_b) / 255.0);
+    float l_a = 0.0f;
+    float l_b = 1.0f;
+    l_a = (static_cast<float>(p_a) / 255.0f);
+    l_b = 1.0f / (static_cast<float>(p_b) / 255.0f);
 
     return Vector2f(l_a, l_b);
 }

@@ -1,4 +1,5 @@
 
+#include <vector>
 #include <boost\format.hpp>
 #include "FaceTracker.h"
 #include "models\CustomFaceModel.h"
@@ -40,32 +41,59 @@ void CustomFaceModel::Initialize(IFTFaceTracker* pFaceTracker) {
 }
 
 void CustomFaceModel::UpdateModel(IFTResult* pFTResult, FT_CAMERA_CONFIG* pCameraConfig) {
+    HRESULT hr;
+    hasModel = false;
+
+    if (pModel == nullptr)
+        throw std::runtime_error("Face model not initialized");
+
+    // Get face Action Units (AUs)
+    float *pAUs;
+    UINT auCount;
+    if (FAILED(hr = pFTResult->GetAUCoefficients(&pAUs, &auCount)))
+        throw ft_error("Error getting head AUs", hr);
+    actionUnits = vector<float>(pAUs, pAUs + auCount);
+
+    // Get face shape units (SUs)
+    float headScale;
+    FLOAT *pSUCoefs;
+    UINT SUCount;
+    BOOL haveConverged;
+    if (FAILED(hr = pFaceTracker->GetShapeUnits(&headScale, &pSUCoefs, &SUCount, &haveConverged)))
+        throw ft_error("Error getting head SUs", hr);
+    shapeUnits = vector<float>(pSUCoefs, pSUCoefs + SUCount);
+
+    // Use the AUs and SUs to deform the original mesh
+
+
     hasModel = true;
 }
 
 void CustomFaceModel::DrawGL() {
-    bool has_texcoords = faceMesh.hasTexCoords();
+    if (hasModel) {
+        bool hasTexcoords = faceMesh.hasTexCoords();
 
-    glPushMatrix();
+        glPushMatrix();
 
-    glBegin(GL_TRIANGLES);
-    for (int f = 0; f < faceMesh.nFaces(); f++) {
-        auto face = faceMesh.face(f);
-        
-        for (int v = 0; v < face.nDim(); v++) {
-            int i = face[v];
+        glBegin(GL_TRIANGLES);
+        for (int f = 0; f < faceMesh.nFaces(); f++) {
+            auto face = faceMesh.face(f);
 
-            if (has_texcoords) {
-                auto uv = faceMesh.texCoord(i);
-                glTexCoord2f(uv[0], uv[1]);
+            for (int v = 0; v < (int)face.nDim(); v++) {
+                int i = face[v];
+
+                if (hasTexcoords) {
+                    auto uv = faceMesh.texCoord(i);
+                    glTexCoord2d(uv[0], uv[1]);
+                }
+
+                auto vertex = faceMesh.vertex(i);
+                glVertex3d(vertex[0], vertex[1], vertex[2]);
             }
-
-            auto vertex = faceMesh.vertex(i);
-            glVertex3f(vertex[0], vertex[1], vertex[2]);
         }
-    }
-    glEnd();
+        glEnd();
 
-    glPopMatrix();
+        glPopMatrix();
+    }
 }
 

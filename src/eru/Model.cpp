@@ -4,15 +4,14 @@
 
 #include <direct.h>
 #include <fstream>
+#include <exception>
+#include <boost/format.hpp>
 
 #include "eru/Model.h"
 #include "eru/StringStreamUtils.h"
 
 using namespace eruFace;
 using namespace eruMath;
-
-#define fl_alert(m) throw std::runtime_error(m)
-#define fl_alert(m, b) throw std::runtime_error(std::string(m) + std::string(b))
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -102,7 +101,7 @@ Model::setDynamicParam(int paramNo, double paramVal)
 {
     if (paramNo >= nDynamicDeformations() || paramNo < 0)
     {
-        fl_alert("Dynamic parameter number out of range!");
+        throw std::runtime_error("Dynamic parameter number out of range!");
     }
     _dynamicParams[paramNo] = paramVal;
     _dynamicParamsModified = true;
@@ -113,7 +112,7 @@ Model::getDynamicParam(int paramNo) const
 {
     if (paramNo >= nDynamicDeformations() || paramNo < 0)
     {
-        fl_alert("Dynamic parameter number out of range!");
+        throw std::runtime_error("Dynamic parameter number out of range!");
     }
     return _dynamicParams[paramNo];
 }
@@ -130,7 +129,7 @@ Model::setStaticParam(int paramNo, double paramVal)
 {
     if (paramNo >= nStaticDeformations() || paramNo < 0)
     {
-        fl_alert("Static parameter number out of range!");
+        throw std::runtime_error("Static parameter number out of range!");
     }
     _staticParams[paramNo] = paramVal;
     _staticParamsModified = true;
@@ -141,7 +140,7 @@ Model::getStaticParam(int paramNo) const
 {
     if (paramNo >= nStaticDeformations() || paramNo < 0)
     {
-	    fl_alert("Static parameter number out of range!");
+        throw std::runtime_error("Static parameter number out of range!");
     }
     return _staticParams[paramNo];
 }
@@ -200,7 +199,7 @@ Model::setAllParams(const std::vector<double>& params)
 {
 	if (params.size() != 9 + nStaticDeformations() + nDynamicDeformations())
     {
-		fl_alert("Bad argument: Wrong input vector size!");
+        throw std::runtime_error("Bad argument: Wrong input vector size!");
 	}
 	_rotation[0]    = params[0];
 	_rotation[1]    = params[1];
@@ -524,7 +523,7 @@ Model::read(const std::string& fname)
 { 
 	bool success;
 
-	char oldPath[_MAX_PATH];
+	//char oldPath[_MAX_PATH];
     std::string newPath = fname;// eru::getFilePath(fname);
 	//_getcwd(oldPath, _MAX_PATH);
 	//_chdir(newPath.c_str());
@@ -592,8 +591,7 @@ Model::read(const std::string& fname)
 		return success;
 	}
  
-	fl_alert("Unknown file type: %s.", const_cast<char* >(ext.c_str()));
-	return false;
+    throw std::runtime_error((boost::format("Unknown file type: '%s'") % ext).str());
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -606,8 +604,7 @@ Model::readAMD(std::istream& is)
     std::string ext = eru::getLowerCaseFileExtension(fname);
 	if (ext != "wfm" && ext != "smd")
     {
-		fl_alert("Unknown file type: %s.", const_cast<char* >(ext.c_str()));
-		return false;
+        throw std::runtime_error((boost::format("Unknown file type: '%s'") % ext).str());
 	}
 
 	char oldPath[_MAX_PATH];
@@ -640,13 +637,11 @@ Model::readSMD(std::istream& is)
     std::string ext = eru::getLowerCaseFileExtension(fname);
 	if (ext != "wfm")
     {
-		fl_alert("Unknown file type: %s.", const_cast<char* >(ext.c_str()));
-		return false;
+        throw std::runtime_error((boost::format("Unknown file type: '%s'") % ext).str());
 	}
 	if (!read(fname))
     {
-        fl_alert("Couldn't read wireframe file: %s (pointed to by static model file)!", const_cast<char* >(fname.c_str()));
-		return false;
+        throw std::runtime_error((boost::format("Couldn't read wireframe file: %s (pointed to by static model file)!") % fname).str());
 	}
 	readParams(_staticParams, is);
 	_staticParamsModified = true;
@@ -846,8 +841,7 @@ Model::write(const std::string& fname)
 {
 	if (fname.length() >= _MAX_PATH)
     {
-		fl_alert("Filename too long!");
-		return false;
+        throw std::runtime_error("Filename too long!");
 	}
     std::string ext = eru::getLowerCaseFileExtension(fname);
   
