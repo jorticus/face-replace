@@ -1,6 +1,8 @@
 #ifndef ERUFACE_MODEL_H
 #define ERUFACE_MODEL_H
 
+#include <vector>
+#include <unordered_map>
 #include "eruFace/VertexSet.h"
 #include "eruFace/Deformation.h"
 
@@ -49,6 +51,9 @@ namespace eruFace
             inline       Deformation& dynamicDeformation( int n ) { return _dynamicDeformations[n]; }
             inline const Deformation& staticDeformation( int n ) const { return _staticDeformations[n]; }
             inline       Deformation& staticDeformation( int n ) { return _staticDeformations[n]; }
+
+            inline const int dynamicDeformationIndex(std::string name) { return _dynamicIndices.at(name); }
+            inline const int staticDeformationIndex(std::string name) { return _staticIndices.at(name); }
 
             void       setDynamicParam( int, double );
             double     getDynamicParam( int ) const;
@@ -135,9 +140,11 @@ namespace eruFace
 
             std::vector<Deformation> _dynamicDeformations;
             std::vector<double>      _dynamicParams;
+            std::unordered_map<std::string, int> _dynamicIndices;
             
             std::vector<Deformation> _staticDeformations;
             std::vector<double>      _staticParams;
+            std::unordered_map<std::string, int> _staticIndices;
 	  
             eruMath::Vector3d _rotation;
             eruMath::Vector3d _scale; 

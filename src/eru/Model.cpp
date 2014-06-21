@@ -6,6 +6,7 @@
 #include <fstream>
 #include <exception>
 #include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "eru/Model.h"
 #include "eru/StringStreamUtils.h"
@@ -729,6 +730,13 @@ Model::readDynamicDeformations(std::istream& is)
 {
     readDeformations(_dynamicDeformations, "Action Unit", is);
     _dynamicParams.assign(nDynamicDeformations(), 0.0);
+
+    _dynamicIndices.clear();
+    for (int i = 0; i < _dynamicDeformations.size(); i++) {
+        auto name = _dynamicDeformations[i].getName();
+        boost::algorithm::to_lower(name);
+        _dynamicIndices[name] = i;
+    }
 }
 
 void
@@ -736,6 +744,13 @@ Model::readStaticDeformations(std::istream& is)
 {
     readDeformations(_staticDeformations, "Shape Unit", is);
     _staticParams.assign(nStaticDeformations(), 0.0);
+
+    _staticIndices.clear();
+    for (int i = 0; i < _staticDeformations.size(); i++) {
+        auto name = _staticDeformations[i].getName();
+        boost::algorithm::to_lower(name);
+        _staticIndices[name] = i;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////

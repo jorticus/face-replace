@@ -28,6 +28,9 @@ public:
 private:
     bool                hasModel;
 
+    std::vector<int>    su_map;
+    std::vector<int>    au_map;
+
     IFTModel*           pModel;
     IFTFaceTracker*     pFaceTracker;
 

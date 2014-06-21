@@ -8,27 +8,29 @@
 
 using namespace std;
 
-static const int su_map[] = {
-    0, // Head height
-    1, // Eyebrows vertical position
-    2, // Eyes vertical position
-    3, // Eyes width
-    4, // Eyes height
-    5, // Eye separation distance
-    8, // Nose vertical position
-    10, // Mouth vertical position
-    11, // Mouth width
-    -1, // Eyes vertical difference
-    -1, // Chin width
+#define NUM_KINECT_SU 11
+static const string kinect_su_map[NUM_KINECT_SU] = {
+    "head height",
+    "eyebrows vertical position",
+    "eyes vertical position",
+    "eyes, width",
+    "eyes, height",
+    "eye separation distance",
+    "nose vertical position",
+    "mouth vertical position",
+    "mouth width",
+    "", // Eyes vertical distance // Not specified in candide-3
+    "", // Chin width // Not specified in candide-3
 };
 
-static const int au_map[] = {
-    0, // Upper lip raiser
-    1, // Jaw lowerer
-    2, // Lip stretcher
-    3, // Brow lowerer
-    4, // Lip corner depressor
-    5, // Outer brow raiser
+#define NUM_KINECT_AU 6
+static const string kinect_au_map[NUM_KINECT_AU] = {
+    "auv0   upper lip raiser (au10)",
+    "auv11 jaw drop (au26/27)",
+    "auv2   lip stretcher (au20)",
+    "auv3   brow lowerer (au4)",
+    "auv14 lip corner depressor (au13/15)",
+    "auv5   outer brow raiser (au2)",
 };
 
 CustomFaceModel::CustomFaceModel() : FaceModel()
@@ -49,6 +51,30 @@ bool CustomFaceModel::LoadMesh(std::string filename) {
     if (!mesh._texFilename.empty()) {
         if (!texture.loadFromFile(mesh._texFilename)) {
             throw runtime_error((boost::format("Error loading face mesh texture '%s'") % mesh._texFilename).str());
+        }
+    }
+
+    // Look up kinect to wfm parameter mappings and store for later use
+    su_map.clear();
+    for (int i = 0; i < NUM_KINECT_SU; i++) {
+        const string name = kinect_su_map[i];
+        try {
+            int map_idx = (!name.empty()) ? mesh.staticDeformationIndex(name) : -1;
+            su_map.push_back(map_idx);
+        }
+        catch (exception& e) {
+            throw runtime_error((boost::format("Kinect SU '%s' not found in the provided model") % name).str());
+        }
+    }
+    au_map.clear();
+    for (int i = 0; i < NUM_KINECT_AU; i++) {
+        const string name = kinect_au_map[i];
+        try {
+            int map_idx = (!name.empty()) ? mesh.dynamicDeformationIndex(name) : -1;
+            au_map.push_back(map_idx);
+        }
+        catch (exception& e) {
+            throw runtime_error((boost::format("Kinect AU '%s' not found in the provided model") % name).str());
         }
     }
 
@@ -84,9 +110,9 @@ void CustomFaceModel::UpdateModel(IFTResult* pFTResult, FT_CAMERA_CONFIG* pCamer
     if (nSD > 0) {
         for (int i = 0; i < suCount; i++) {
             // Map kinect shape units to candide-3 shape units
-            int su_idx = su_map[i];
-            if (su_idx >= 0) {
-                mesh.setStaticParam(su_idx, static_cast<double>(shapeUnits[i]));
+            int idx = su_map[i];
+            if (idx >= 0) {
+                mesh.setStaticParam(i, shapeUnits[i]);
             }
         }
         mesh.updateStatic();
@@ -103,9 +129,9 @@ void CustomFaceModel::UpdateModel(IFTResult* pFTResult, FT_CAMERA_CONFIG* pCamer
     if (nDD > 0) {
         for (int i = 0; i < auCount; i++) {
             // Map kinect shape units to candide-3 action units
-            int au_idx = au_map[i];
-            if (au_idx >= 0) {
-                mesh.setDynamicParam(au_idx, static_cast<double>(actionUnits[i]));
+            int idx = au_map[i];
+            if (idx >= 0) {
+                mesh.setDynamicParam(i, actionUnits[i]);
             }
         }
     }
