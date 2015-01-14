@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_PropertySheetDisplayName>OpenCV.300.Win32.Debug</_PropertySheetDisplayName>
+    <ExecutablePath>F:\Cpp\opencv\build\bin\Debug;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Link>
+      <AdditionalDependencies>zlibd.lib;opencv_core300d.lib;opencv_highgui300d.lib;opencv_bioinspired300d.lib;opencv_calib3d300d.lib;opencv_contrib300d.lib;opencv_cuda300d.lib;opencv_cudaarithm300d.lib;opencv_cudabgsegm300d.lib;opencv_cudacodec300d.lib;opencv_cudafeatures2d300d.lib;opencv_cudafilters300d.lib;opencv_cudaimgproc300d.lib;opencv_cudaoptflow300d.lib;opencv_cudastereo300d.lib;opencv_cudawarping300d.lib;opencv_features2d300d.lib;opencv_flann300d.lib;opencv_imgproc300d.lib;opencv_legacy300d.lib;opencv_ml300d.lib;opencv_nonfree300d.lib;opencv_objdetect300d.lib;opencv_optim300d.lib;opencv_photo300d.lib;opencv_shape300d.lib;opencv_softcascade300d.lib;opencv_stitching300d.lib;opencv_superres300d.lib;opencv_ts300d.lib;opencv_video300d.lib;opencv_videostab300d.lib;IlmImfd.lib;libjasperd.lib;libjpegd.lib;libpngd.lib;libtiffd.lib;libwebpd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries />
+      <AdditionalLibraryDirectories>F:\Cpp\opencv\build\lib\Debug;F:\Cpp\opencv\build\3rdparty\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <ClCompile>
+      <AdditionalIncludeDirectories>F:\Cpp\opencv\build\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>

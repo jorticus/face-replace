@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <PlatformDirx Condition="'$(Platform)' == 'Win32'">x86</PlatformDirx>
+    <PlatformDirx Condition="'$(Platform)' == 'x64'">amd64</PlatformDirx>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemDefinitionGroup>
+    <Link>
+      <AdditionalLibraryDirectories>F:\Cpp\KinectDTK\Lib\$(PlatformDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>FaceTrackLib.lib;KinectBackgroundRemoval180_32.lib;KinectFusion180_32.lib;KinectInteraction180_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ClCompile>
+      <AdditionalIncludeDirectories>F:\Cpp\KinectDTK\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>
